@@ -215,12 +215,21 @@ public final class Wildfire extends Disaster {
         for (Block fire : burning.keySet()) {
             if (chance(0.15)) {
                 Location p = fire.getLocation().add(0.5, 0.5, 0.5);
-                fire.getWorld().spawnParticle(Particle.CAMPFIRE_SIGNAL_SMOKE, p, 1, 0.2, 0.5, 0.2, 0.02);
-                fire.getWorld().spawnParticle(Particle.LARGE_SMOKE, p, 2, 0.4, 0.4, 0.4, 0.02);
+                fx(Particle.CAMPFIRE_SIGNAL_SMOKE, p, 1, 0.2, 0.5, 0.2, 0.02);
+                fx(Particle.LARGE_SMOKE, p, 2, 0.4, 0.4, 0.4, 0.02);
+            }
+            if (chance(0.08)) {
+                // 불씨가 바람을 타고 날아오름
+                Location p = fire.getLocation().add(0.5, 0.8, 0.5);
+                fxMove(Particle.FLAME, p, wind.clone().add(new Vector(0, 1.5, 0)), 0.15, null);
+                fxMove(Particle.SMALL_FLAME, p, wind.clone().add(new Vector(0, 2, 0)), 0.2, null);
             }
         }
         for (Player player : targets) {
             Location loc = player.getLocation();
+            // 넓은 범위에 재가 내림
+            fx(Particle.ASH, loc.clone().add(0, 4, 0), 25, 12, 3, 12, 0);
+            fx(Particle.WHITE_ASH, loc.clone().add(0, 3, 0), 10, 10, 3, 10, 0);
             int near = 0;
             for (Block fire : burning.keySet()) {
                 if (fire.getWorld() != loc.getWorld()) {

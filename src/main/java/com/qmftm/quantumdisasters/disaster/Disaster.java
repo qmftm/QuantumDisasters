@@ -3,7 +3,9 @@ package com.qmftm.quantumdisasters.disaster;
 import com.qmftm.quantumdisasters.QuantumDisasters;
 import com.qmftm.quantumdisasters.platform.Platforms;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Particle;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.TileState;
@@ -96,6 +98,47 @@ public abstract class Disaster {
         return Math.max(1, (int) Math.round(config().getInt(key, def) * intensity()));
     }
 
+    /** 파티클 양 배율 (config 의 particles). 저사양 기기에서는 줄이세요. */
+    protected double particleAmount() {
+        return Math.max(0, plugin.getConfig().getDouble("particles", 1.0));
+    }
+
+    /**
+     * 파티클을 뿌립니다. 양은 particles 배율에 맞춰 조절되고, 멀리서도 보이게 합니다.
+     * (재해는 규모가 커서 멀리서도 보여야 함)
+     */
+    protected <T> void fx(Particle particle, Location at, int count, double ox, double oy, double oz, double extra, T data) {
+        double scaled = count * particleAmount();
+        int n = (int) scaled;
+        if (random().nextDouble() < scaled - n) {
+            n++;
+        }
+        if (n <= 0 && count > 0) {
+            return;
+        }
+        at.getWorld().spawnParticle(particle, at, n, ox, oy, oz, extra, data, true);
+    }
+
+    protected void fx(Particle particle, Location at, int count, double ox, double oy, double oz, double extra) {
+        fx(particle, at, count, ox, oy, oz, extra, null);
+    }
+
+    /** 방향이 있는 파티클 하나 (count 0 = offset 이 날아가는 방향이 됨). */
+    protected <T> void fxMove(Particle particle, Location at, Vector direction, double speed, T data) {
+        if (random().nextDouble() >= particleAmount()) {
+            return;
+        }
+        at.getWorld().spawnParticle(particle, at, 0, direction.getX(), direction.getY(), direction.getZ(), speed, data, true);
+    }
+
+    /** 땅 위에 원을 그립니다. (경고 표시 등) */
+    protected void ring(Location center, double radius, Particle particle, Object data, int points) {
+        for (int i = 0; i < points; i++) {
+            double a = Math.PI * 2 * i / points;
+            fx(particle, center.clone().add(Math.cos(a) * radius, 0, Math.sin(a) * radius), 1, 0, 0, 0, 0, data);
+        }
+    }
+
     /** 확률(0~1)을 넘기면 그만큼의 확률로 true. */
     protected static boolean chance(double probability) {
         return random().nextDouble() < probability;
@@ -105,7 +148,7 @@ public abstract class Disaster {
      * center 주변 radius 칸 안의 무작위 지표면 블록. 불러와지지 않은 청크면 null.
      * (재해 범위가 넓어도 새 청크를 강제로 불러오지 않도록)
      */
-    protected static Block randomSurface(org.bukkit.Location center, int radius) {
+    protected static Block randomSurface(Location center, int radius) {
         World world = center.getWorld();
         int x = center.getBlockX() + random().nextInt(-radius, radius + 1);
         int z = center.getBlockZ() + random().nextInt(-radius, radius + 1);

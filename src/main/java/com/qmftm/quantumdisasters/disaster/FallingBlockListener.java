@@ -65,6 +65,7 @@ public final class FallingBlockListener implements Listener {
         Location loc = meteor.getLocation();
         boolean blockDamage = plugin.getConfig().getBoolean("block-damage", true);
         loc.getWorld().createExplosion(loc, power, blockDamage, blockDamage);
+        impactEffects(loc, power);
 
         if (power >= GIANT_POWER) {
             loc.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, loc, 3, 2, 1, 2, 0);
@@ -72,6 +73,47 @@ public final class FallingBlockListener implements Listener {
             if (blockDamage) {
                 scatterDebris(loc);
             }
+        }
+    }
+
+    /** 충돌 충격파 고리, 남는 연기 기둥, 근처 사람이 휘청이는 충격. */
+    private void impactEffects(Location loc, float power) {
+        var world = loc.getWorld();
+        double amount = Math.max(0, plugin.getConfig().getDouble("particles", 1.0));
+        double maxRadius = power * 2.2;
+        int[] step = {0};
+        // 바닥을 따라 퍼져 나가는 충격파
+        org.bukkit.Bukkit.getScheduler().runTaskTimer(plugin, task -> {
+            double r = 1 + step[0] * maxRadius / 8;
+            int points = (int) (r * 6 * amount);
+            for (int i = 0; i < points; i++) {
+                double a = Math.PI * 2 * i / points;
+                Location p = loc.clone().add(Math.cos(a) * r, 0.3, Math.sin(a) * r);
+                world.spawnParticle(Particle.CLOUD, p, 1, 0.1, 0.05, 0.1, 0.01, null, true);
+                if (i % 3 == 0) {
+                    world.spawnParticle(Particle.FLAME, p, 1, 0.1, 0.1, 0.1, 0.01, null, true);
+                }
+            }
+            if (++step[0] >= 8) {
+                task.cancel();
+            }
+        }, 0L, 1L);
+        // 충돌 지점에 한동안 연기 기둥이 남음
+        int[] smoke = {0};
+        org.bukkit.Bukkit.getScheduler().runTaskTimer(plugin, task -> {
+            world.spawnParticle(Particle.CAMPFIRE_SIGNAL_SMOKE, loc, (int) Math.ceil(2 * amount), 0.6, 0.2, 0.6, 0.02, null, true);
+            world.spawnParticle(Particle.LARGE_SMOKE, loc, (int) Math.ceil(2 * amount), 0.8, 0.3, 0.8, 0.01, null, true);
+            if (++smoke[0] >= 20) {
+                task.cancel();
+            }
+        }, 5L, 10L);
+        // 근처 사람이 충격에 휘청
+        for (var player : loc.getNearbyPlayers(power * 4)) {
+            Vector away = player.getLocation().toVector().subtract(loc.toVector()).setY(0);
+            if (away.lengthSquared() > 0.01) {
+                player.setVelocity(player.getVelocity().add(away.normalize().multiply(0.3).setY(0.2)));
+            }
+            player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_GENERIC_EXPLODE, 1f, 0.5f);
         }
     }
 

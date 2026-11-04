@@ -301,8 +301,15 @@ public final class Tsunami extends Disaster {
                     wave.startX + wave.dirX * wave.distance + px * l,
                     wave.top + 0.5,
                     wave.startZ + wave.dirZ * wave.distance + pz * l);
-            wave.world.spawnParticle(Particle.SPLASH, p, 6, 0.6, 0.3, 0.6, 0);
-            wave.world.spawnParticle(Particle.CLOUD, p, 1, 0.4, 0.2, 0.4, 0.02);
+            fx(Particle.SPLASH, p, 6, 0.6, 0.3, 0.6, 0);
+            fx(Particle.CLOUD, p, 1, 0.4, 0.2, 0.4, 0.02);
+            // 파도 앞면에서 쏟아지는 물보라
+            Location face = p.clone().add(wave.dirX * 1.5, -random().nextDouble(1, 8), wave.dirZ * 1.5);
+            fx(Particle.FALLING_WATER, face, 4, 0.5, 1.5, 0.5, 0);
+            fxMove(Particle.SPLASH, p.clone().add(0, 0.5, 0), new Vector(wave.dirX, 0.6, wave.dirZ), 0.6, null);
+            if (l % 9 == 0) {
+                fx(Particle.CLOUD, p.clone().add(0, 1.5, 0), 3, 1.2, 0.6, 1.2, 0.03); // 물안개
+            }
         }
     }
 

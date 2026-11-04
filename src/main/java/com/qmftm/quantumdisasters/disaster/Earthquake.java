@@ -37,6 +37,20 @@ import java.util.UUID;
 public final class Earthquake extends Disaster {
 
     private final Map<UUID, Boundary> boundaries = new HashMap<>();
+
+    /** 경계에서 퍼져 나가는 땅의 파동 */
+    private static final class Ripple {
+        final Location center;
+        final double maxRadius;
+        double radius;
+
+        Ripple(Location center, double maxRadius) {
+            this.center = center;
+            this.maxRadius = maxRadius;
+        }
+    }
+
+    private final List<Ripple> ripples = new ArrayList<>();
     /** 발산형 균열이 시간이 갈수록 넓어지도록 */
     private int riftWidth;
 
@@ -57,6 +71,7 @@ public final class Earthquake extends Disaster {
     @Override
     public void start() {
         boundaries.clear();
+        ripples.clear();
         riftWidth = 1;
     }
 
@@ -92,6 +107,7 @@ public final class Earthquake extends Disaster {
         if (elapsed % 200 == 0) {
             riftWidth = Math.min(4, riftWidth + 1);
         }
+        tickRipples();
         for (Player player : targets()) {
             Boundary b = boundaryFor(player, elapsed);
             double s = strength(b, player);
@@ -109,12 +125,66 @@ public final class Earthquake extends Disaster {
             if (elapsed % 5 == 0) {
                 crackGround(player.getLocation(), radius, s);
             }
+            if (elapsed % 8 == 0) {
+                boundaryDust(player, b);
+            }
+            if (elapsed % 30 == 1) {
+                // 경계 위 가까운 점에서 파동이 퍼져 나감
+                Location from = new Location(player.getWorld(), b.pointX(), player.getLocation().getY(), b.pointZ());
+                ripples.add(new Ripple(from, Math.min(60, b.distance() + 15)));
+            }
+            if (!isExposed(player) && elapsed % 4 == 0) {
+                // 실내·동굴: 천장에서 부스러기가 떨어짐
+                fx(Particle.FALLING_DUST, player.getLocation().add(0, 2.5, 0), 6, 3, 0.2, 3, 0, Material.STONE.createBlockData());
+            }
             if (blockDamage() && elapsed % 40 == 20 && nearBoundary(b, player)) {
                 switch (b.type()) {
                     case DIVERGENT -> rift(player.getWorld(), b, player);
                     case CONVERGENT -> uplift(player.getWorld(), b, player);
                     case TRANSFORM -> shear(player.getWorld(), b, player);
                 }
+            }
+        }
+    }
+
+    /** 판 경계를 따라 흙먼지가 피어오릅니다. */
+    private void boundaryDust(Player player, Boundary b) {
+        World world = player.getWorld();
+        for (int i = 0; i < 6; i++) {
+            double t = random().nextDouble(-30, 30);
+            int x = (int) Math.floor(b.pointX() + b.tangentX() * t);
+            int z = (int) Math.floor(b.pointZ() + b.tangentZ() * t);
+            if (!world.isChunkLoaded(x >> 4, z >> 4)) {
+                continue;
+            }
+            Block ground = world.getHighestBlockAt(x, z);
+            Location at = ground.getLocation().add(0.5, 1.2, 0.5);
+            fx(Particle.BLOCK, at, 12, 0.6, 0.4, 0.6, 0, ground.getBlockData());
+            fx(Particle.CAMPFIRE_COSY_SMOKE, at, 1, 0.4, 0.2, 0.4, 0.02);
+        }
+    }
+
+    /** 파동 고리를 키워 나갑니다. 땅 표면을 따라 흙이 튀어 보입니다. */
+    private void tickRipples() {
+        java.util.Iterator<Ripple> it = ripples.iterator();
+        while (it.hasNext()) {
+            Ripple r = it.next();
+            r.radius += 1.2;
+            if (r.radius > r.maxRadius) {
+                it.remove();
+                continue;
+            }
+            int points = (int) (r.radius * 2.5);
+            World world = r.center.getWorld();
+            for (int i = 0; i < points; i++) {
+                double a = Math.PI * 2 * i / points;
+                int x = (int) Math.floor(r.center.getX() + Math.cos(a) * r.radius);
+                int z = (int) Math.floor(r.center.getZ() + Math.sin(a) * r.radius);
+                if (!world.isChunkLoaded(x >> 4, z >> 4)) {
+                    continue;
+                }
+                Block ground = world.getHighestBlockAt(x, z);
+                fx(Particle.BLOCK, ground.getLocation().add(0.5, 1.1, 0.5), 2, 0.3, 0.1, 0.3, 0, ground.getBlockData());
             }
         }
     }

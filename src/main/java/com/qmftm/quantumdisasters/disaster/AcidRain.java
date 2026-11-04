@@ -48,13 +48,18 @@ public final class AcidRain extends Disaster {
             if (blockDamage() && elapsed % 4 == 0) {
                 corrode(player.getLocation(), radius);
             }
+            if (elapsed % 3 == 0) {
+                acidDrops(player.getLocation());
+            }
             if (!isExposed(player)) {
                 continue;
             }
             if (elapsed % 5 == 0) {
                 Location above = player.getLocation().add(0, 3, 0);
-                player.getWorld().spawnParticle(Particle.FALLING_WATER, above, 20, 4, 1, 4, 0);
-                player.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, player.getLocation().add(0, 2, 0), 3, 0.5, 0.3, 0.5, 0);
+                fx(Particle.FALLING_WATER, above, 20, 4, 1, 4, 0);
+                fx(Particle.HAPPY_VILLAGER, player.getLocation().add(0, 2, 0), 3, 0.5, 0.3, 0.5, 0);
+                // 몸에서 피어오르는 연기 (산에 녹는 중)
+                fx(Particle.CAMPFIRE_COSY_SMOKE, player.getLocation().add(0, 1, 0), 1, 0.3, 0.5, 0.3, 0.01);
             }
             if (elapsed % 20 == 0) {
                 double damage = config().getDouble("damage-per-second", 1.5) * intensity();
@@ -66,6 +71,21 @@ public final class AcidRain extends Disaster {
                 player.damage(damage);
                 player.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 40, 0, false, false));
                 player.playSound(player.getLocation(), Sound.BLOCK_FIRE_EXTINGUISH, 0.5f, 1.5f);
+            }
+        }
+    }
+
+    private static final Particle.DustOptions ACID = new Particle.DustOptions(org.bukkit.Color.fromRGB(0x9C, 0xFF, 0x3C), 1.1f);
+
+    /** 초록빛 산성 빗방울과, 땅에 닿은 곳에서 피어오르는 연기. */
+    private void acidDrops(Location center) {
+        fx(Particle.DUST, center.clone().add(0, 5, 0), 30, 9, 4, 9, 0, ACID);
+        for (int i = 0; i < 3; i++) {
+            Block ground = randomSurface(center, 12);
+            if (ground != null) {
+                Location at = ground.getLocation().add(0.5, 1.05, 0.5);
+                fx(Particle.CAMPFIRE_COSY_SMOKE, at, 1, 0.2, 0, 0.2, 0.005);
+                fx(Particle.DUST, at, 3, 0.3, 0.05, 0.3, 0, ACID);
             }
         }
     }

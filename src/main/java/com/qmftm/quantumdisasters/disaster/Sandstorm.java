@@ -27,6 +27,21 @@ import org.bukkit.util.Vector;
 public final class Sandstorm extends Disaster {
 
     private Vector wind;
+
+    /** 작은 모래 회오리 (먼지 돌풍) */
+    private static final class DustDevil {
+        final Location at;
+        int ticksLeft;
+
+        DustDevil(Location at, int ticksLeft) {
+            this.at = at;
+            this.ticksLeft = ticksLeft;
+        }
+    }
+
+    private final java.util.List<DustDevil> devils = new java.util.ArrayList<>();
+    /** 바람에 굴러다니는 마른 덤불 (회전초) */
+    private final java.util.List<Item> tumbleweeds = new java.util.ArrayList<>();
     private BlockData sand;
     private Particle.DustOptions dust;
 
@@ -93,16 +108,97 @@ public final class Sandstorm extends Disaster {
         if (elapsed % 4 == 0) {
             blowItems();
         }
+        if (elapsed % 50 == 0) {
+            for (Player player : targets()) {
+                Block ground = randomSurface(player.getLocation(), 22);
+                if (ground != null && chance(0.6)) {
+                    devils.add(new DustDevil(ground.getLocation().add(0.5, 1, 0.5), 20 * random().nextInt(4, 8)));
+                }
+                if (chance(0.7)) {
+                    spawnTumbleweed(player.getLocation());
+                }
+            }
+        }
+        tickDustDevils(elapsed);
+        tickTumbleweeds();
     }
 
     private void particles(Location loc) {
         // 바람 방향으로 날리는 모래
         for (int i = 0; i < 25; i++) {
             Location p = loc.clone().add(random().nextDouble(-10, 10), random().nextDouble(-1, 5), random().nextDouble(-10, 10));
-            loc.getWorld().spawnParticle(Particle.BLOCK, p, 0, wind.getX(), -0.05, wind.getZ(), 1.5, sand);
+            fxMove(Particle.BLOCK, p, new Vector(wind.getX(), -0.05, wind.getZ()), 1.5, sand);
         }
-        loc.getWorld().spawnParticle(Particle.DUST, loc.clone().add(0, 1.5, 0), 40, 7, 3, 7, 0, dust);
-        loc.getWorld().spawnParticle(Particle.FALLING_DUST, loc.clone().add(0, 4, 0), 15, 8, 2, 8, 0, sand);
+        fx(Particle.DUST, loc.clone().add(0, 1.5, 0), 40, 7, 3, 7, 0, dust);
+        fx(Particle.FALLING_DUST, loc.clone().add(0, 4, 0), 15, 8, 2, 8, 0, sand);
+    }
+
+    private void tickDustDevils(int elapsed) {
+        java.util.Iterator<DustDevil> it = devils.iterator();
+        while (it.hasNext()) {
+            DustDevil d = it.next();
+            if (d.ticksLeft-- <= 0) {
+                it.remove();
+                continue;
+            }
+            d.at.add(wind.clone().multiply(0.15));
+            if (d.at.getWorld().isChunkLoaded(d.at.getBlockX() >> 4, d.at.getBlockZ() >> 4)) {
+                d.at.setY(d.at.getWorld().getHighestBlockYAt(d.at) + 1);
+            }
+            for (double h = 0; h < 7; h += 0.5) {
+                double a = elapsed * 0.6 + h * 1.3;
+                double r = 0.4 + h * 0.25;
+                fx(Particle.BLOCK, d.at.clone().add(Math.cos(a) * r, h, Math.sin(a) * r), 1, 0.05, 0.05, 0.05, 0, sand);
+            }
+            // 휘말린 사람은 살짝 떠오르며 돌아감
+            for (Player player : d.at.getNearbyPlayers(2.2)) {
+                if (targets().contains(player)) {
+                    Vector spin = player.getLocation().toVector().subtract(d.at.toVector()).setY(0);
+                    spin = new Vector(-spin.getZ(), 0, spin.getX());
+                    if (spin.lengthSquared() > 0.01) {
+                        push(player, spin.normalize().multiply(0.3).setY(0.25));
+                    }
+                }
+            }
+        }
+    }
+
+    private void spawnTumbleweed(Location around) {
+        Location at = around.clone().subtract(wind.clone().multiply(20)).add(random().nextDouble(-8, 8), 0, random().nextDouble(-8, 8));
+        if (!at.getWorld().isChunkLoaded(at.getBlockX() >> 4, at.getBlockZ() >> 4)) {
+            return;
+        }
+        at.setY(at.getWorld().getHighestBlockYAt(at) + 1.5);
+        Item item = at.getWorld().dropItem(at, new ItemStack(Material.DEAD_BUSH));
+        item.setCanPlayerPickup(false);
+        item.setCanMobPickup(false);
+        item.setPersistent(false);
+        tumbleweeds.add(item);
+    }
+
+    private void tickTumbleweeds() {
+        tumbleweeds.removeIf(item -> {
+            if (!item.isValid() || item.getTicksLived() > 200) {
+                item.remove();
+                return true;
+            }
+            if (item.isOnGround()) {
+                // 통통 튀며 굴러감
+                item.setVelocity(wind.clone().multiply(0.45).setY(random().nextDouble(0.25, 0.45)));
+                fx(Particle.BLOCK, item.getLocation(), 3, 0.2, 0.05, 0.2, 0, sand);
+            }
+            return false;
+        });
+    }
+
+    @Override
+    public void stop() {
+        super.stop();
+        devils.clear();
+        for (Item item : tumbleweeds) {
+            item.remove();
+        }
+        tumbleweeds.clear();
     }
 
     /** 땅이 모래로 덮이고 풀이 말라 죽습니다. */
@@ -137,7 +233,7 @@ public final class Sandstorm extends Disaster {
     private void blowItems() {
         for (Player player : targets()) {
             for (Entity e : player.getNearbyEntities(24, 8, 24)) {
-                if (e instanceof Item item && item.isOnGround()) {
+                if (e instanceof Item item && item.isOnGround() && !tumbleweeds.contains(item)) {
                     item.setVelocity(item.getVelocity().add(wind.clone().multiply(0.25)).setY(0.1));
                 }
             }

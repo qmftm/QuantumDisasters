@@ -34,9 +34,13 @@ public final class Blizzard extends Disaster {
         return Component.text("혹한의 눈보라! 실내로 피하거나 가죽 옷을 입으세요!", NamedTextColor.AQUA);
     }
 
+    private org.bukkit.util.Vector wind;
+
     @Override
     public void start() {
         setWeather(true, false, durationTicks() + 200);
+        double angle = random().nextDouble(Math.PI * 2);
+        wind = new org.bukkit.util.Vector(Math.cos(angle), -0.15, Math.sin(angle));
     }
 
     @Override
@@ -44,8 +48,13 @@ public final class Blizzard extends Disaster {
         int radius = config().getInt("radius", 30);
         for (Player player : targets()) {
             Location loc = player.getLocation();
-            player.getWorld().spawnParticle(Particle.SNOWFLAKE, loc.clone().add(0, 2, 0), 25, 8, 3, 8, 0.15);
-            player.getWorld().spawnParticle(Particle.WHITE_ASH, loc.clone().add(0, 1.5, 0), 30, 6, 2, 6, 0);
+            fx(Particle.SNOWFLAKE, loc.clone().add(0, 2, 0), 25, 8, 3, 8, 0.15);
+            fx(Particle.WHITE_ASH, loc.clone().add(0, 1.5, 0), 30, 6, 2, 6, 0);
+            // 바람 방향으로 옆으로 날리는 눈발
+            for (int i = 0; i < 12; i++) {
+                Location p = loc.clone().add(random().nextDouble(-10, 10), random().nextDouble(0, 5), random().nextDouble(-10, 10));
+                fxMove(Particle.SNOWFLAKE, p, wind, 0.8, null);
+            }
 
             if (blockDamage() && elapsed % 3 == 0) {
                 snowfall(loc, radius);
@@ -59,6 +68,11 @@ public final class Blizzard extends Disaster {
 
             if (elapsed % 20 == 0) {
                 player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 1, false, false));
+            }
+            if (elapsed % 25 == 0) {
+                // 하얀 입김
+                Location mouth = player.getEyeLocation().add(player.getLocation().getDirection().multiply(0.4));
+                fx(Particle.CLOUD, mouth, 3, 0.05, 0.05, 0.05, 0.01);
             }
             if (elapsed % 50 == 0) {
                 player.playSound(player.getLocation(), Sound.ITEM_ELYTRA_FLYING, 0.5f, 0.5f);

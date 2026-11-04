@@ -75,7 +75,18 @@ public final class SolarStorm extends Disaster implements RadiationSource {
             double strength = Math.min(1, ambientRate() / Math.max(0.01, peak));
             for (Player player : targets()) {
                 aurora(player.getLocation(), strength, elapsed);
+                cosmicRays(player.getLocation(), strength);
             }
+        }
+    }
+
+    /** 하늘에서 쏟아지는 빛줄기 (방사선이 셀수록 많음). */
+    private void cosmicRays(Location around, double strength) {
+        int count = (int) Math.round(6 * strength);
+        org.bukkit.util.Vector down = new org.bukkit.util.Vector(0, -1, 0);
+        for (int i = 0; i < count; i++) {
+            Location p = around.clone().add(random().nextDouble(-16, 16), random().nextDouble(8, 20), random().nextDouble(-16, 16));
+            fxMove(Particle.END_ROD, p, down, random().nextDouble(0.6, 1.2), null);
         }
     }
 
@@ -94,7 +105,7 @@ public final class SolarStorm extends Disaster implements RadiationSource {
             double y = baseY + random().nextDouble(0, 8);
             Location p = around.clone().add(x, 0, z);
             p.setY(y);
-            around.getWorld().spawnParticle(Particle.DUST, p, 1, 0.3, 1.5, 0.3, 0, y - baseY > 4 ? purple : green);
+            fx(Particle.DUST, p, 1, 0.3, 1.5, 0.3, 0, y - baseY > 4 ? purple : green);
         }
     }
 

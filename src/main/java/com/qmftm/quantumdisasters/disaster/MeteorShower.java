@@ -47,6 +47,9 @@ public final class MeteorShower extends Disaster {
     @Override
     public void tick(int elapsed) {
         drawTrails();
+        if (elapsed % 3 == 0) {
+            drawShadows();
+        }
 
         List<Player> targets = targets();
         if (targets.isEmpty()) {
@@ -67,14 +70,37 @@ public final class MeteorShower extends Disaster {
         giants.removeIf(m -> !m.isValid());
         for (FallingBlock meteor : meteors) {
             Location loc = meteor.getLocation();
-            loc.getWorld().spawnParticle(Particle.FLAME, loc, 8, 0.3, 0.3, 0.3, 0.03);
-            loc.getWorld().spawnParticle(Particle.LARGE_SMOKE, loc, 3, 0.2, 0.2, 0.2, 0.01);
+            fx(Particle.FLAME, loc, 8, 0.3, 0.3, 0.3, 0.03);
+            fx(Particle.LARGE_SMOKE, loc, 3, 0.2, 0.2, 0.2, 0.01);
+            fx(Particle.SMALL_FLAME, loc, 4, 0.5, 0.5, 0.5, 0.01);
         }
         for (FallingBlock giant : giants) {
             Location loc = giant.getLocation();
-            loc.getWorld().spawnParticle(Particle.FLAME, loc, 40, 1.2, 1.2, 1.2, 0.08);
-            loc.getWorld().spawnParticle(Particle.LAVA, loc, 6, 1, 1, 1, 0);
-            loc.getWorld().spawnParticle(Particle.LARGE_SMOKE, loc, 15, 1.5, 1.5, 1.5, 0.03);
+            fx(Particle.FLAME, loc, 40, 1.2, 1.2, 1.2, 0.08);
+            fx(Particle.LAVA, loc, 6, 1, 1, 1, 0);
+            fx(Particle.LARGE_SMOKE, loc, 15, 1.5, 1.5, 1.5, 0.03);
+            fx(Particle.SOUL_FIRE_FLAME, loc, 10, 0.8, 0.8, 0.8, 0.02);
+            fx(Particle.CAMPFIRE_SIGNAL_SMOKE, loc, 2, 0.5, 0.5, 0.5, 0.01);
+        }
+    }
+
+    /** 운석이 떨어질 땅에 그림자 원. 가까워질수록 좁고 진해집니다. */
+    private void drawShadows() {
+        Particle.DustOptions red = new Particle.DustOptions(org.bukkit.Color.fromRGB(0xFF, 0x40, 0x20), 1.6f);
+        Particle.DustOptions dark = new Particle.DustOptions(org.bukkit.Color.fromRGB(0x60, 0x10, 0x00), 2.2f);
+        List<FallingBlock> all = new ArrayList<>(meteors);
+        all.addAll(giants);
+        for (FallingBlock meteor : all) {
+            Location loc = meteor.getLocation();
+            int ground = loc.getWorld().getHighestBlockYAt(loc);
+            double height = loc.getY() - ground;
+            if (height < 1) {
+                continue;
+            }
+            boolean giant = giants.contains(meteor);
+            double radius = Math.max(0.8, Math.min(giant ? 8 : 4, height / 8)) * (giant ? 1.6 : 1);
+            Location center = new Location(loc.getWorld(), loc.getX(), ground + 1.1, loc.getZ());
+            ring(center, radius, Particle.DUST, height < 15 ? dark : red, giant ? 24 : 12);
         }
     }
 

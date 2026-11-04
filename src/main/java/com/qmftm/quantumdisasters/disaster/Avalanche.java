@@ -88,6 +88,14 @@ public final class Avalanche extends Disaster {
         }
         snow.removeIf(f -> !f.isValid());
         if (elapsed % 2 == 0) {
+            // 쏟아지는 눈 덩어리를 따라오는 눈가루 구름
+            for (int i = 0; i < snow.size(); i += 3) {
+                Location at = snow.get(i).getLocation();
+                fx(Particle.CLOUD, at, 2, 0.6, 0.4, 0.6, 0.02);
+                fx(Particle.SNOWFLAKE, at, 3, 0.5, 0.5, 0.5, 0.05);
+            }
+        }
+        if (elapsed % 2 == 0) {
             hitPlayers();
         }
     }
@@ -147,8 +155,9 @@ public final class Avalanche extends Disaster {
             snow.add(block);
         }
         if (elapsed % 3 == 0) {
-            world.spawnParticle(Particle.SNOWFLAKE, slide.source, 30, width / 2.0, 2, width / 2.0, 0.2);
-            world.spawnParticle(Particle.ITEM_SNOWBALL, slide.source, 20, width / 2.0, 1, width / 2.0, 0.1);
+            fx(Particle.SNOWFLAKE, slide.source, 30, width / 2.0, 2, width / 2.0, 0.2);
+            fx(Particle.ITEM_SNOWBALL, slide.source, 20, width / 2.0, 1, width / 2.0, 0.1);
+            fx(Particle.CLOUD, slide.source, 15, width / 2.0, 1.5, width / 2.0, 0.05);
         }
         if (elapsed % 5 == 0) {
             world.playSound(slide.source, Sound.BLOCK_POWDER_SNOW_STEP, 6f, 0.4f);
@@ -168,13 +177,6 @@ public final class Avalanche extends Disaster {
                 player.setFreezeTicks(Math.min(player.getMaxFreezeTicks() + 40, player.getFreezeTicks() + 40));
                 player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 2, true, false));
                 break;
-            }
-            if (chance(0.3)) {
-                for (FallingBlock f : snow) {
-                    if (f.getWorld() == player.getWorld() && f.getLocation().distanceSquared(player.getLocation()) < 400) {
-                        player.getWorld().spawnParticle(Particle.SNOWFLAKE, f.getLocation(), 2, 0.3, 0.3, 0.3, 0.02);
-                    }
-                }
             }
         }
     }

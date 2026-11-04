@@ -142,18 +142,32 @@ public final class Tornado extends Disaster {
             for (int arm = 0; arm < arms; arm++) {
                 double a = elapsed * 0.4 + h * 0.35 + arm * (Math.PI * 2 / arms);
                 Location p = center.clone().add(Math.cos(a) * r, h, Math.sin(a) * r);
-                world.spawnParticle(Particle.CLOUD, p, 1, 0.2, 0.2, 0.2, 0);
+                fx(Particle.CLOUD, p, 1, 0.2, 0.2, 0.2, 0);
                 if (arm == 0 && h % 6 == 0) {
-                    world.spawnParticle(Particle.LARGE_SMOKE, p, 1, 0.3, 0.3, 0.3, 0);
+                    fx(Particle.LARGE_SMOKE, p, 1, 0.3, 0.3, 0.3, 0);
                 }
             }
         }
         // 바닥에서 흙먼지가 소용돌이칩니다.
         Block ground = center.clone().add(0, -1, 0).getBlock();
         if (!ground.getType().isAir()) {
-            world.spawnParticle(Particle.BLOCK, center, 25, 3, 0.5, 3, ground.getBlockData());
+            fx(Particle.BLOCK, center, 25, 3, 0.5, 3, 0, ground.getBlockData());
+            // 깔때기를 따라 빙빙 도는 흙·돌 파편
+            for (int i = 0; i < 14; i++) {
+                double h = random().nextDouble(0, height * 0.8);
+                double r = 1 + (topRadius - 1) * (h / height) * random().nextDouble(0.5, 1);
+                double a = elapsed * 0.5 + random().nextDouble(Math.PI * 2);
+                fx(Particle.BLOCK, center.clone().add(Math.cos(a) * r, h, Math.sin(a) * r), 2, 0.2, 0.2, 0.2, 0, ground.getBlockData());
+            }
         }
-        world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, center, 3, 2.5, 0.5, 2.5, 0.05);
+        fx(Particle.CAMPFIRE_COSY_SMOKE, center, 3, 2.5, 0.5, 2.5, 0.05);
+        // 소용돌이 안에서 번쩍이는 번개
+        if (random().nextInt(25) == 0) {
+            Location flash = center.clone().add(0, random().nextDouble(height * 0.3, height * 0.9), 0);
+            fx(Particle.ELECTRIC_SPARK, flash, 40, 2, 3, 2, 0.4);
+            fx(Particle.FLASH, flash, 1, 0, 0, 0, 0, org.bukkit.Color.WHITE);
+            world.playSound(flash, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 2f, 1.4f);
+        }
     }
 
     private void pullEntities(Location center) {

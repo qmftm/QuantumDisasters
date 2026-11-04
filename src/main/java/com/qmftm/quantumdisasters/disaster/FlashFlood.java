@@ -139,8 +139,21 @@ public final class FlashFlood extends Disaster {
 
     private void rainEffects(Player player) {
         Location loc = player.getLocation();
-        player.getWorld().spawnParticle(Particle.FALLING_WATER, loc.clone().add(0, 4, 0), 60, 8, 2, 8, 0);
-        player.getWorld().spawnParticle(Particle.SPLASH, loc, 30, 6, 0.5, 6, 0);
+        fx(Particle.FALLING_WATER, loc.clone().add(0, 4, 0), 60, 8, 2, 8, 0);
+        fx(Particle.SPLASH, loc, 30, 6, 0.5, 6, 0);
+        // 물 표면의 거품과 흙탕물
+        for (int i = 0; i < 10; i++) {
+            Block top = randomSurface(loc, 14);
+            if (top != null && top.getType() == Material.WATER) {
+                Location surface = top.getLocation().add(0.5, 1, 0.5);
+                fx(Particle.BUBBLE_POP, surface, 4, 0.4, 0, 0.4, 0.02);
+                fx(Particle.SPLASH, surface, 3, 0.4, 0, 0.4, 0);
+                fx(Particle.BLOCK, surface, 2, 0.4, 0, 0.4, 0, Material.MUD.createBlockData());
+            }
+        }
+        if (player.isInWater()) {
+            fx(Particle.BUBBLE, loc, 10, 1, 1, 1, 0.05);
+        }
         if (random().nextInt(4) == 0) {
             player.playSound(loc, Sound.WEATHER_RAIN, 1.5f, 0.7f);
             player.playSound(loc, Sound.BLOCK_WATER_AMBIENT, 1.5f, 0.6f);
