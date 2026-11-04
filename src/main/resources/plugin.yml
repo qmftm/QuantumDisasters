@@ -1,0 +1,15 @@
+name: QuantumDisasters
+version: '${project.version}'
+main: com.qmftm.quantumdisasters.QuantumDisasters
+api-version: '26.3'
+description: 게임이 시작되면 주기적으로 무작위 자연재해가 찾아옵니다.
+commands:
+  disaster:
+    description: 자연재해 게임을 관리합니다.
+    usage: /<command> <start|stop|skip|trigger|list|status|reload>
+    aliases: [qd, 재해]
+    permission: quantumdisasters.admin
+permissions:
+  quantumdisasters.admin:
+    description: 자연재해 명령어 사용 권한
+    default: op

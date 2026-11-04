@@ -1,0 +1,41 @@
+# 서버가 켜지면 자동으로 재해 게임을 시작할지 여부 (false면 /disaster start 로 시작)
+auto-start: false
+
+# 게임 시작 후 첫 재해까지 대기 시간(초)
+first-delay-seconds: 15
+
+# 재해가 끝나고 다음 재해까지 쉬는 시간(초)
+interval-seconds: 45
+
+# 재해 시작 전 경고 카운트다운(초)
+warning-seconds: 5
+
+# 재해가 블록을 부술 수 있는지 여부
+block-damage: true
+
+# 재해가 일어날 월드 목록 (비워두면 모든 월드)
+worlds: []
+
+# 각 재해 설정. enabled: false 로 끄거나 duration-seconds 로 지속 시간을 바꿀 수 있습니다.
+disasters:
+  meteor:
+    enabled: true
+    duration-seconds: 30
+    meteors-per-second: 2
+    explosion-power: 3.0
+  earthquake:
+    enabled: true
+    duration-seconds: 25
+  lightning:
+    enabled: true
+    duration-seconds: 30
+  acid_rain:
+    enabled: true
+    duration-seconds: 40
+    damage-per-second: 1.0
+  tornado:
+    enabled: true
+    duration-seconds: 40
+  blizzard:
+    enabled: true
+    duration-seconds: 40
