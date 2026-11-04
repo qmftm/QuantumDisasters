@@ -189,7 +189,6 @@ public final class DisasterManager {
         broadcastTitle(
                 Component.text("자연재해 게임 시작!", NamedTextColor.GOLD),
                 Component.text(goalText(), NamedTextColor.GRAY));
-        Bukkit.broadcast(Component.text("[재해] 게임 시작! " + goalText() + " / " + respawnText(), NamedTextColor.GOLD));
         playSound(Sound.ENTITY_ENDER_DRAGON_GROWL, 0.6f, 1.2f);
         sendDayActionBar();
         return true;
@@ -201,7 +200,6 @@ public final class DisasterManager {
             return false;
         }
         shutdown();
-        Bukkit.broadcast(Component.text("[재해] 자연재해 게임이 종료되었습니다.", NamedTextColor.YELLOW));
         return true;
     }
 
@@ -242,13 +240,11 @@ public final class DisasterManager {
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.showTitle(title);
         }
-        Bukkit.broadcast(Component.text("[재해] 생존 성공! " + surviveDays() + "일을 모두 버텨냈습니다!", NamedTextColor.GOLD));
         playSound(Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
         shutdown();
     }
 
     private void lose() {
-        int survived = day - 1;
         Title title = Title.title(
                 Component.text("게임 오버", NamedTextColor.DARK_RED, TextDecoration.BOLD),
                 Component.text("DAY " + day + " 에 모두 쓰러졌습니다", NamedTextColor.GRAY),
@@ -256,7 +252,6 @@ public final class DisasterManager {
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.showTitle(title);
         }
-        Bukkit.broadcast(Component.text("[재해] 게임 오버! 버틴 날: " + survived + "일", NamedTextColor.RED));
         playSound(Sound.ENTITY_WITHER_DEATH, 0.6f, 1f);
         shutdown();
     }
@@ -417,7 +412,6 @@ public final class DisasterManager {
         broadcastTitle(
                 Component.text("재해 발생!", NamedTextColor.RED),
                 Component.text("살아남으세요...", NamedTextColor.GRAY));
-        Bukkit.broadcast(Component.text("[재해] 재해가 찾아왔습니다! 살아남으세요!", NamedTextColor.RED));
         if (sirenPending) {
             sirenPending = false;
             siren.play();
@@ -437,7 +431,6 @@ public final class DisasterManager {
         Disaster ended = current;
         endCurrent();
         if (ended != null) {
-            Bukkit.broadcast(Component.text("[재해] 재해가 지나갔습니다. 잠시 숨을 돌리세요.", NamedTextColor.GREEN));
             playSound(Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1f);
         }
         reviveWaiting();
@@ -465,7 +458,7 @@ public final class DisasterManager {
     }
 
     private void noDisasters() {
-        Bukkit.broadcast(Component.text("[재해] 활성화된 재해가 없습니다. config.yml 을 확인하세요.", NamedTextColor.RED));
+        plugin.getLogger().warning("활성화된 재해가 없어 게임을 멈춥니다. config.yml 을 확인하세요.");
         stop();
     }
 
@@ -533,15 +526,11 @@ public final class DisasterManager {
                 p.lives--;
                 if (p.lives <= 0) {
                     p.status = LifeStatus.ELIMINATED;
-                    Bukkit.broadcast(Component.text("[재해] " + player.getName() + " 님이 탈락했습니다.", NamedTextColor.RED));
-                } else {
-                    player.sendMessage(Component.text("[재해] 남은 목숨: " + p.lives, NamedTextColor.YELLOW));
                 }
             }
             case AFTER_DISASTER -> {
                 if (state == State.ACTIVE) {
                     p.status = LifeStatus.WAITING_RESPAWN;
-                    player.sendMessage(Component.text("[재해] 이번 재해가 끝나면 부활합니다.", NamedTextColor.YELLOW));
                 }
             }
         }
@@ -590,7 +579,6 @@ public final class DisasterManager {
             }
             p.status = LifeStatus.ALIVE;
             revive(player, p.originalMode);
-            player.sendMessage(Component.text("[재해] 재해를 버텨내어 부활했습니다!", NamedTextColor.GREEN));
         }
     }
 
@@ -693,14 +681,6 @@ public final class DisasterManager {
 
     private String goalText() {
         return surviveDays() > 0 ? surviveDays() + "일을 버티세요!" : "최대한 오래 버티세요!";
-    }
-
-    private String respawnText() {
-        return switch (respawnMode()) {
-            case UNLIMITED -> "무한 리스폰";
-            case LIVES -> "목숨 " + maxLives() + "개";
-            case AFTER_DISASTER -> "죽으면 재해가 끝날 때 부활";
-        };
     }
 
     private void updateBossBarViewers() {

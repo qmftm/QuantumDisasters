@@ -2,9 +2,6 @@ package com.qmftm.quantumdisasters.radiation;
 
 import com.qmftm.quantumdisasters.QuantumDisasters;
 import com.qmftm.quantumdisasters.disaster.Disaster;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.NamespacedKey;
@@ -29,6 +26,7 @@ import java.util.concurrent.ThreadLocalRandom;
  *     <li>게임 중에는 맞은 방사선이 피폭량으로 쌓이고, 아주 천천히 줄어듭니다.</li>
  *     <li>피폭량이 쌓일수록 허기 → 나약함 → 메스꺼움 → 피해 순으로 증상이 나타납니다.</li>
  * </ul>
+ * 증상만 나타나고 채팅으로 따로 알려주지는 않습니다.
  * 피폭량은 플레이어 데이터에 저장되어 재접속해도 유지되고, 새 게임을 시작하면 0 이 됩니다.
  */
 public final class RadiationService {
@@ -38,7 +36,6 @@ public final class RadiationService {
     private final NamespacedKey doseKey;
     private final NamespacedKey sessionKey;
     private final Map<UUID, Double> exposureCache = new HashMap<>();
-    private final Map<UUID, Integer> stageCache = new HashMap<>();
     private BukkitTask task;
     private long session;
     private int tick;
@@ -73,7 +70,6 @@ public final class RadiationService {
     /** 새 게임이 시작될 때: 모든 플레이어의 피폭량을 0 으로. (오프라인 플레이어는 접속할 때) */
     public void newGame() {
         session = System.currentTimeMillis();
-        stageCache.clear();
         for (Player player : Bukkit.getOnlinePlayers()) {
             setDose(player, 0);
         }
@@ -89,7 +85,6 @@ public final class RadiationService {
     public void onDeath(Player player) {
         if (config().getBoolean("reset-on-death", true)) {
             setDose(player, 0);
-            stageCache.remove(player.getUniqueId());
         }
     }
 
@@ -193,20 +188,6 @@ public final class RadiationService {
         double lethal = s != null ? s.getDouble("lethal", 1200) : 1200;
 
         int stage = dose >= lethal ? 5 : dose >= damage ? 4 : dose >= sickness ? 3 : dose >= weakness ? 2 : dose >= hunger ? 1 : 0;
-        int before = stageCache.getOrDefault(player.getUniqueId(), 0);
-        stageCache.put(player.getUniqueId(), stage);
-        if (stage > before) {
-            // 무엇 때문인지는 알려주지 않고 몸 상태만
-            String feeling = switch (stage) {
-                case 1 -> "속이 허하다...";
-                case 2 -> "몸에 힘이 빠진다...";
-                case 3 -> "속이 메스껍고 머리가 어지럽다...";
-                case 4 -> "피부가 따끔거리고 몸이 타들어 가는 것 같다...";
-                default -> "몸이 버티지 못하고 있다...!";
-            };
-            player.sendMessage(Component.text(feeling, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, true));
-        }
-
         if (stage >= 1) {
             player.addPotionEffect(new PotionEffect(PotionEffectType.HUNGER, 60, stage >= 2 ? 1 : 0, true, false));
         }
