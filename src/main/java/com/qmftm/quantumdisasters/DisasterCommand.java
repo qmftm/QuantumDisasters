@@ -82,8 +82,11 @@ public final class DisasterCommand implements TabExecutor {
                     case ACTIVE -> "재해 진행 중";
                 };
                 Component msg = Component.text("[재해] 상태: " + state, NamedTextColor.YELLOW);
-                if (manager.current() != null) {
-                    msg = msg.append(Component.text(" - ", NamedTextColor.GRAY)).append(manager.current().displayName());
+                if (manager.isRunning()) {
+                    msg = msg.append(Component.text(" / DAY " + manager.day(), NamedTextColor.GOLD));
+                }
+                if (manager.periodDisaster() != null) {
+                    msg = msg.append(Component.text(" / 이번 재해: ", NamedTextColor.GRAY)).append(manager.periodDisaster().displayName());
                 }
                 sender.sendMessage(msg);
             }

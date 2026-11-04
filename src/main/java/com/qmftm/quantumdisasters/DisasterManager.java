@@ -4,46 +4,80 @@ import com.qmftm.quantumdisasters.disaster.AcidRain;
 import com.qmftm.quantumdisasters.disaster.Blizzard;
 import com.qmftm.quantumdisasters.disaster.Disaster;
 import com.qmftm.quantumdisasters.disaster.Earthquake;
-import com.qmftm.quantumdisasters.disaster.LightningStorm;
 import com.qmftm.quantumdisasters.disaster.MeteorShower;
+import com.qmftm.quantumdisasters.disaster.ThunderStorm;
 import com.qmftm.quantumdisasters.disaster.Tornado;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
 /**
  * 재해 게임의 흐름을 관리합니다.
- * 휴식(카운트다운) → 무작위 재해 → 휴식 → 다른 재해 ... 를 게임이 멈출 때까지 반복합니다.
+ *
+ * <ul>
+ *     <li>게임이 시작되면 DAY 1 부터 날짜를 셉니다. (액션바에 "DAY n" 표시)</li>
+ *     <li>disaster-change-days 일마다 직전과 다른 재해로 바뀝니다.</li>
+ *     <li>그 기간 동안은 같은 재해가 휴식(interval-seconds)을 사이에 두고 반복해서 찾아옵니다.</li>
+ *     <li>survive-days 일을 버티면 성공, 모두 죽거나 탈락하면 실패입니다.</li>
+ * </ul>
  */
 public final class DisasterManager {
 
     public enum State { STOPPED, WAITING, ACTIVE }
 
+    private enum LifeStatus { ALIVE, WAITING_RESPAWN, ELIMINATED }
+
+    private static final class Participant {
+        int lives;
+        LifeStatus status = LifeStatus.ALIVE;
+        final GameMode originalMode;
+
+        Participant(int lives, GameMode originalMode) {
+            this.lives = lives;
+            this.originalMode = originalMode;
+        }
+    }
+
     private final QuantumDisasters plugin;
     private final Map<String, Disaster> disasters = new LinkedHashMap<>();
+    private final Map<UUID, Participant> participants = new HashMap<>();
+    /** 게임이 끝났을 때 오프라인이라 관전 모드를 풀어주지 못한 플레이어. */
+    private final Map<UUID, GameMode> pendingRestore = new HashMap<>();
     private final BossBar bossBar = BossBar.bossBar(Component.empty(), 1f, BossBar.Color.GREEN, BossBar.Overlay.PROGRESS);
 
     private BukkitTask task;
     private State state = State.STOPPED;
+    /** 지금 기간의 재해 (disaster-change-days 일마다 바뀜) */
+    private Disaster periodDisaster;
+    /** 지금 실제로 진행 중인 재해 (휴식 중이면 null) */
     private Disaster current;
-    private Disaster last;
+    private int day;
+    private int dayTicks;
     private int waitTicks;
     private int waitTotal;
     private int elapsed;
@@ -53,7 +87,7 @@ public final class DisasterManager {
         this.plugin = plugin;
         register(new MeteorShower(plugin));
         register(new Earthquake(plugin));
-        register(new LightningStorm(plugin));
+        register(new ThunderStorm(plugin));
         register(new AcidRain(plugin));
         register(new Tornado(plugin));
         register(new Blizzard(plugin));
@@ -75,22 +109,73 @@ public final class DisasterManager {
         return current;
     }
 
+    public Disaster periodDisaster() {
+        return periodDisaster;
+    }
+
+    public int day() {
+        return day;
+    }
+
     public boolean isRunning() {
         return state != State.STOPPED;
     }
+
+    // ───────────────────────── 설정 ─────────────────────────
+
+    private FileConfiguration config() {
+        return plugin.getConfig();
+    }
+
+    private int dayLengthTicks() {
+        return Math.max(20, config().getInt("day-length-seconds", 1200) * 20);
+    }
+
+    private int changeDays() {
+        return Math.max(1, config().getInt("disaster-change-days", 1));
+    }
+
+    private int surviveDays() {
+        return Math.max(0, config().getInt("survive-days", 10));
+    }
+
+    private boolean continuous() {
+        return config().getInt("interval-seconds", 45) <= 0;
+    }
+
+    public RespawnMode respawnMode() {
+        return RespawnMode.parse(config().getString("respawn.mode", "lives"));
+    }
+
+    private int maxLives() {
+        return Math.max(1, config().getInt("respawn.lives", 3));
+    }
+
+    // ───────────────────────── 게임 시작/종료 ─────────────────────────
 
     /** 재해 게임을 시작합니다. 이미 진행 중이면 아무것도 하지 않습니다. */
     public boolean start() {
         if (isRunning()) {
             return false;
         }
-        startWaiting(plugin.getConfig().getInt("first-delay-seconds", 15));
+        participants.clear();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            addParticipant(player);
+        }
+
+        day = 1;
+        dayTicks = 0;
+        syncWorldTime();
+        periodDisaster = pickNext(null);
+        startWaiting(config().getInt("first-delay-seconds", 15));
         task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1L, 1L);
 
         broadcastTitle(
                 Component.text("자연재해 게임 시작!", NamedTextColor.GOLD),
-                Component.text("살아남으세요...", NamedTextColor.GRAY));
+                Component.text(goalText(), NamedTextColor.GRAY));
+        Bukkit.broadcast(Component.text("[재해] 게임 시작! " + goalText() + " / " + respawnText(), NamedTextColor.GOLD));
         playSound(Sound.ENTITY_ENDER_DRAGON_GROWL, 0.6f, 1.2f);
+        sendDayActionBar();
         return true;
     }
 
@@ -99,19 +184,67 @@ public final class DisasterManager {
         if (!isRunning()) {
             return false;
         }
+        shutdown();
+        Bukkit.broadcast(Component.text("[재해] 자연재해 게임이 종료되었습니다.", NamedTextColor.YELLOW));
+        return true;
+    }
+
+    private void shutdown() {
         endCurrent();
         if (task != null) {
             task.cancel();
             task = null;
         }
         state = State.STOPPED;
-        last = null;
+        periodDisaster = null;
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.hideBossBar(bossBar);
+            player.sendActionBar(Component.empty());
         }
-        Bukkit.broadcast(Component.text("[재해] 자연재해 게임이 종료되었습니다.", NamedTextColor.YELLOW));
-        return true;
+        // 관전 중인 참가자들을 원래대로 되돌립니다.
+        for (Map.Entry<UUID, Participant> entry : participants.entrySet()) {
+            Participant p = entry.getValue();
+            if (p.status == LifeStatus.ALIVE) {
+                continue;
+            }
+            Player player = Bukkit.getPlayer(entry.getKey());
+            if (player != null) {
+                revive(player, p.originalMode);
+            } else {
+                pendingRestore.put(entry.getKey(), p.originalMode);
+            }
+        }
+        participants.clear();
     }
+
+    private void win() {
+        Title title = Title.title(
+                Component.text("생존 성공!", NamedTextColor.GOLD, TextDecoration.BOLD),
+                Component.text(surviveDays() + "일을 버텨냈습니다!", NamedTextColor.YELLOW),
+                Title.Times.times(Duration.ofMillis(300), Duration.ofSeconds(5), Duration.ofSeconds(1)));
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.showTitle(title);
+        }
+        Bukkit.broadcast(Component.text("[재해] 생존 성공! " + surviveDays() + "일을 모두 버텨냈습니다!", NamedTextColor.GOLD));
+        playSound(Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
+        shutdown();
+    }
+
+    private void lose() {
+        int survived = day - 1;
+        Title title = Title.title(
+                Component.text("게임 오버", NamedTextColor.DARK_RED, TextDecoration.BOLD),
+                Component.text("DAY " + day + " 에 모두 쓰러졌습니다", NamedTextColor.GRAY),
+                Title.Times.times(Duration.ofMillis(300), Duration.ofSeconds(5), Duration.ofSeconds(1)));
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.showTitle(title);
+        }
+        Bukkit.broadcast(Component.text("[재해] 게임 오버! 버틴 날: " + survived + "일", NamedTextColor.RED));
+        playSound(Sound.ENTITY_WITHER_DEATH, 0.6f, 1f);
+        shutdown();
+    }
+
+    // ───────────────────────── 명령어용 ─────────────────────────
 
     /** 지금 진행 중인 단계를 건너뜁니다. (재해 중이면 재해 종료, 휴식 중이면 바로 다음 재해) */
     public boolean skip() {
@@ -126,21 +259,67 @@ public final class DisasterManager {
         return false;
     }
 
-    /** 특정 재해를 즉시 발생시킵니다. 게임이 멈춰 있으면 게임도 함께 시작합니다. */
+    /** 특정 재해를 즉시 발생시킵니다. 이번 기간의 재해도 이것으로 바뀝니다. 게임이 멈춰 있으면 게임도 시작합니다. */
     public void trigger(Disaster disaster) {
         if (!isRunning()) {
             start();
         }
         endCurrent();
+        periodDisaster = disaster;
         begin(disaster);
     }
 
+    // ───────────────────────── 매 틱 ─────────────────────────
+
     private void tick() {
         updateBossBarViewers();
+
+        dayTicks++;
+        if (dayTicks >= dayLengthTicks()) {
+            dayTicks = 0;
+            day++;
+            if (surviveDays() > 0 && day > surviveDays()) {
+                win();
+                return;
+            }
+            onNewDay();
+            if (!isRunning()) {
+                return;
+            }
+        }
+        if (dayTicks % 20 == 0) {
+            sendDayActionBar();
+            if (checkGameOver()) {
+                return;
+            }
+        }
+
         if (state == State.WAITING) {
             tickWaiting();
         } else if (state == State.ACTIVE) {
             tickActive();
+        }
+    }
+
+    private void onNewDay() {
+        syncWorldTime();
+        playSound(Sound.BLOCK_BELL_USE, 1f, 1f);
+        sendDayActionBar();
+
+        if ((day - 1) % changeDays() == 0) {
+            // 재해가 바뀌는 날
+            Disaster previous = periodDisaster;
+            if (state == State.ACTIVE) {
+                endCurrent();
+                reviveWaiting();
+            }
+            periodDisaster = pickNext(previous);
+            if (periodDisaster == null) {
+                noDisasters();
+                return;
+            }
+            Bukkit.broadcast(Component.text("[재해] DAY " + day + " - 새로운 재해가 다가옵니다...", NamedTextColor.RED));
+            startWaiting(Math.max(1, config().getInt("warning-seconds", 5)));
         }
     }
 
@@ -153,7 +332,7 @@ public final class DisasterManager {
             bossBar.color(BossBar.Color.GREEN);
             bossBar.progress(clamp(waitTicks / (float) Math.max(1, waitTotal)));
 
-            int warning = plugin.getConfig().getInt("warning-seconds", 5);
+            int warning = config().getInt("warning-seconds", 5);
             if (secondsLeft > 0 && secondsLeft <= warning) {
                 broadcastTitle(
                         Component.text(String.valueOf(secondsLeft), NamedTextColor.RED),
@@ -163,13 +342,14 @@ public final class DisasterManager {
         }
 
         if (waitTicks <= 0) {
-            Disaster next = pickNext();
-            if (next == null) {
-                Bukkit.broadcast(Component.text("[재해] 활성화된 재해가 없습니다. config.yml 을 확인하세요.", NamedTextColor.RED));
-                stop();
+            if (periodDisaster == null || !periodDisaster.enabled()) {
+                periodDisaster = pickNext(periodDisaster);
+            }
+            if (periodDisaster == null) {
+                noDisasters();
                 return;
             }
-            begin(next);
+            begin(periodDisaster);
         }
     }
 
@@ -184,19 +364,25 @@ public final class DisasterManager {
         }
 
         if (elapsed % 20 == 0) {
-            int secondsLeft = Math.max(0, (duration - elapsed) / 20);
-            bossBar.name(current.displayName().append(Component.text(" - " + secondsLeft + "초", NamedTextColor.WHITE)));
-            bossBar.progress(clamp(1f - elapsed / (float) duration));
+            if (continuous()) {
+                bossBar.name(current.displayName());
+                bossBar.progress(1f);
+            } else {
+                int secondsLeft = Math.max(0, (duration - elapsed) / 20);
+                bossBar.name(current.displayName().append(Component.text(" - " + secondsLeft + "초", NamedTextColor.WHITE)));
+                bossBar.progress(clamp(1f - elapsed / (float) duration));
+            }
         }
 
-        if (elapsed >= duration) {
+        if (!continuous() && elapsed >= duration) {
             finishDisaster();
         }
     }
 
+    // ───────────────────────── 재해 진행 ─────────────────────────
+
     private void begin(Disaster disaster) {
         current = disaster;
-        last = disaster;
         elapsed = 0;
         duration = Math.max(20, disaster.durationTicks());
         state = State.ACTIVE;
@@ -229,8 +415,9 @@ public final class DisasterManager {
                     .append(Component.text(" 이(가) 지나갔습니다. 잠시 숨을 돌리세요.", NamedTextColor.WHITE)));
             playSound(Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1f);
         }
+        reviveWaiting();
         if (isRunning()) {
-            startWaiting(plugin.getConfig().getInt("interval-seconds", 45));
+            startWaiting(Math.max(1, config().getInt("interval-seconds", 45)));
         }
     }
 
@@ -252,8 +439,13 @@ public final class DisasterManager {
         waitTicks = waitTotal;
     }
 
-    /** 활성화된 재해 중 하나를 고릅니다. 가능하면 직전과 다른 재해를 고릅니다. */
-    private Disaster pickNext() {
+    private void noDisasters() {
+        Bukkit.broadcast(Component.text("[재해] 활성화된 재해가 없습니다. config.yml 을 확인하세요.", NamedTextColor.RED));
+        stop();
+    }
+
+    /** 활성화된 재해 중 하나를 고릅니다. 가능하면 previous 와 다른 재해를 고릅니다. */
+    private Disaster pickNext(Disaster previous) {
         List<Disaster> pool = new ArrayList<>();
         for (Disaster d : disasters.values()) {
             if (d.enabled()) {
@@ -263,15 +455,140 @@ public final class DisasterManager {
         if (pool.isEmpty()) {
             return null;
         }
-        if (pool.size() > 1 && last != null) {
-            pool.remove(last);
+        if (pool.size() > 1 && previous != null) {
+            pool.remove(previous);
         }
         return pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
     }
 
+    // ───────────────────────── 목숨 / 리스폰 ─────────────────────────
+
+    private void addParticipant(Player player) {
+        GameMode mode = player.getGameMode();
+        if (mode != GameMode.SURVIVAL && mode != GameMode.ADVENTURE) {
+            return;
+        }
+        participants.put(player.getUniqueId(), new Participant(maxLives(), mode));
+    }
+
+    void onDeath(Player player) {
+        if (!isRunning()) {
+            return;
+        }
+        Participant p = participants.get(player.getUniqueId());
+        if (p == null || p.status != LifeStatus.ALIVE) {
+            return;
+        }
+        switch (respawnMode()) {
+            case UNLIMITED -> {
+            }
+            case LIVES -> {
+                p.lives--;
+                if (p.lives <= 0) {
+                    p.status = LifeStatus.ELIMINATED;
+                    Bukkit.broadcast(Component.text("[재해] " + player.getName() + " 님이 탈락했습니다.", NamedTextColor.RED));
+                } else {
+                    player.sendMessage(Component.text("[재해] 남은 목숨: " + p.lives, NamedTextColor.YELLOW));
+                }
+            }
+            case AFTER_DISASTER -> {
+                if (state == State.ACTIVE) {
+                    p.status = LifeStatus.WAITING_RESPAWN;
+                    player.sendMessage(Component.text("[재해] 이번 재해가 끝나면 부활합니다.", NamedTextColor.YELLOW));
+                }
+            }
+        }
+    }
+
+    void onRespawn(Player player) {
+        Participant p = participants.get(player.getUniqueId());
+        if (!isRunning() || p == null || p.status == LifeStatus.ALIVE) {
+            return;
+        }
+        // 리스폰 처리가 끝난 다음 틱에 관전 모드로 바꿉니다.
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (player.isOnline()) {
+                player.setGameMode(GameMode.SPECTATOR);
+            }
+        });
+    }
+
+    void onJoin(Player player) {
+        GameMode restore = pendingRestore.remove(player.getUniqueId());
+        if (restore != null && !isRunning()) {
+            revive(player, restore);
+        }
+        if (!isRunning()) {
+            return;
+        }
+        player.showBossBar(bossBar);
+        Participant p = participants.get(player.getUniqueId());
+        if (p == null) {
+            addParticipant(player);
+        } else if (p.status != LifeStatus.ALIVE) {
+            player.setGameMode(GameMode.SPECTATOR);
+        }
+    }
+
+    /** 재해가 끝나서 부활 대기 중인 플레이어를 되살립니다. */
+    private void reviveWaiting() {
+        for (Map.Entry<UUID, Participant> entry : participants.entrySet()) {
+            Participant p = entry.getValue();
+            if (p.status != LifeStatus.WAITING_RESPAWN) {
+                continue;
+            }
+            Player player = Bukkit.getPlayer(entry.getKey());
+            if (player == null) {
+                continue; // 접속하면 그때 관전 상태로 들어오고 다음 재해 끝에 부활
+            }
+            p.status = LifeStatus.ALIVE;
+            revive(player, p.originalMode);
+            player.sendMessage(Component.text("[재해] 재해를 버텨내어 부활했습니다!", NamedTextColor.GREEN));
+        }
+    }
+
+    private void revive(Player player, GameMode mode) {
+        Location spawn = player.getRespawnLocation();
+        if (spawn == null) {
+            spawn = Bukkit.getWorlds().getFirst().getSpawnLocation();
+        }
+        player.teleport(spawn);
+        player.setGameMode(mode);
+        AttributeInstance maxHealth = player.getAttribute(Attribute.MAX_HEALTH);
+        player.setHealth(maxHealth != null ? maxHealth.getValue() : 20.0);
+        player.setFoodLevel(20);
+        player.setFireTicks(0);
+        player.setFreezeTicks(0);
+    }
+
+    /** 모든 참가자가 죽거나 탈락했으면 게임 오버. */
+    private boolean checkGameOver() {
+        if (respawnMode() == RespawnMode.UNLIMITED || participants.isEmpty()) {
+            return false;
+        }
+        boolean anyOnline = false;
+        for (Map.Entry<UUID, Participant> entry : participants.entrySet()) {
+            Player player = Bukkit.getPlayer(entry.getKey());
+            if (player == null) {
+                continue;
+            }
+            anyOnline = true;
+            if (entry.getValue().status == LifeStatus.ALIVE) {
+                return false;
+            }
+        }
+        if (!anyOnline) {
+            return false; // 아무도 접속해 있지 않으면 판정하지 않습니다.
+        }
+        lose();
+        return true;
+    }
+
+    // ───────────────────────── 대상 ─────────────────────────
+
     /** 재해의 영향을 받는 플레이어 (서바이벌/모험 모드, 대상 월드에 있는 살아있는 플레이어). */
     public List<Player> targets() {
-        List<String> worlds = plugin.getConfig().getStringList("worlds");
+        List<String> worlds = config().getStringList("worlds");
         List<Player> result = new ArrayList<>();
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (player.isDead()) {
@@ -291,11 +608,52 @@ public final class DisasterManager {
 
     /** 대상 플레이어가 있는 월드 목록. */
     public Set<World> targetWorlds() {
-        Set<World> result = new java.util.HashSet<>();
+        Set<World> result = new HashSet<>();
         for (Player player : targets()) {
             result.add(player.getWorld());
         }
         return result;
+    }
+
+    private Set<World> gameWorlds() {
+        List<String> names = config().getStringList("worlds");
+        Set<World> result = new HashSet<>();
+        for (World world : Bukkit.getWorlds()) {
+            if (world.getEnvironment() == World.Environment.NORMAL && (names.isEmpty() || names.contains(world.getName()))) {
+                result.add(world);
+            }
+        }
+        return result;
+    }
+
+    // ───────────────────────── 표시 ─────────────────────────
+
+    private void sendDayActionBar() {
+        Component text = Component.text("DAY " + day, NamedTextColor.GOLD, TextDecoration.BOLD);
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.sendActionBar(text);
+        }
+    }
+
+    private void syncWorldTime() {
+        if (!config().getBoolean("sync-world-time", true)) {
+            return;
+        }
+        for (World world : gameWorlds()) {
+            world.setTime(0);
+        }
+    }
+
+    private String goalText() {
+        return surviveDays() > 0 ? surviveDays() + "일을 버티세요!" : "최대한 오래 버티세요!";
+    }
+
+    private String respawnText() {
+        return switch (respawnMode()) {
+            case UNLIMITED -> "무한 리스폰";
+            case LIVES -> "목숨 " + maxLives() + "개";
+            case AFTER_DISASTER -> "죽으면 재해가 끝날 때 부활";
+        };
     }
 
     private void updateBossBarViewers() {
@@ -321,5 +679,4 @@ public final class DisasterManager {
     private static float clamp(float value) {
         return Math.max(0f, Math.min(1f, value));
     }
-
 }

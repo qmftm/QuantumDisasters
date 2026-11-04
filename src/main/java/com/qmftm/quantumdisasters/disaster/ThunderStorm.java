@@ -9,16 +9,16 @@ import org.bukkit.entity.Player;
 
 import java.util.List;
 
-/** 천둥번개가 몰아치며 주변에 벼락이 떨어집니다. */
-public final class LightningStorm extends Disaster {
+/** 뇌우: 천둥번개가 몰아치며 주변에 벼락이 떨어집니다. */
+public final class ThunderStorm extends Disaster {
 
-    public LightningStorm(QuantumDisasters plugin) {
-        super(plugin, "lightning");
+    public ThunderStorm(QuantumDisasters plugin) {
+        super(plugin, "thunder_storm");
     }
 
     @Override
     public Component displayName() {
-        return Component.text("⚡ 번개 폭풍", NamedTextColor.AQUA);
+        return Component.text("⛈ 뇌우", NamedTextColor.AQUA);
     }
 
     @Override

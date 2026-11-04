@@ -14,8 +14,9 @@ public final class QuantumDisasters extends JavaPlugin {
 
         disasterManager = new DisasterManager(this);
         getServer().getPluginManager().registerEvents(new MeteorListener(this), this);
+        getServer().getPluginManager().registerEvents(new GameListener(disasterManager), this);
 
-        PluginCommand command = getCommand("disaster");
+        PluginCommand command = getCommand("quantumdisasters");
         if (command != null) {
             DisasterCommand executor = new DisasterCommand(this);
             command.setExecutor(executor);
