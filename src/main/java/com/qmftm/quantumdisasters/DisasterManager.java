@@ -63,6 +63,9 @@ public final class DisasterManager {
         }
     }
 
+    /** 재해 중 보스바에 표시되는 이름 (어떤 재해인지는 숨김) */
+    private static final Component HIDDEN_NAME = Component.text("재해 진행 중", NamedTextColor.RED);
+
     private final QuantumDisasters plugin;
     private final Map<String, Disaster> disasters = new LinkedHashMap<>();
     private final Map<UUID, Participant> participants = new HashMap<>();
@@ -375,11 +378,11 @@ public final class DisasterManager {
 
         if (elapsed % 20 == 0) {
             if (continuous()) {
-                bossBar.name(current.displayName());
+                bossBar.name(HIDDEN_NAME);
                 bossBar.progress(1f);
             } else {
                 int secondsLeft = Math.max(0, (duration - elapsed) / 20);
-                bossBar.name(current.displayName().append(Component.text(" - " + secondsLeft + "초", NamedTextColor.WHITE)));
+                bossBar.name(HIDDEN_NAME.append(Component.text(" - " + secondsLeft + "초", NamedTextColor.WHITE)));
                 bossBar.progress(clamp(1f - elapsed / (float) duration));
             }
         }
@@ -397,15 +400,15 @@ public final class DisasterManager {
         duration = Math.max(20, disaster.durationTicks());
         state = State.ACTIVE;
 
-        bossBar.name(disaster.displayName());
+        // 플레이어에게는 어떤 재해인지 알려주지 않습니다.
+        bossBar.name(HIDDEN_NAME);
         bossBar.color(BossBar.Color.RED);
         bossBar.progress(1f);
 
-        broadcastTitle(disaster.displayName(), disaster.description());
-        Bukkit.broadcast(Component.text("[재해] ", NamedTextColor.RED)
-                .append(disaster.displayName())
-                .append(Component.text(" 이(가) 찾아왔습니다! ", NamedTextColor.WHITE))
-                .append(disaster.description()));
+        broadcastTitle(
+                Component.text("재해 발생!", NamedTextColor.RED),
+                Component.text("살아남으세요...", NamedTextColor.GRAY));
+        Bukkit.broadcast(Component.text("[재해] 재해가 찾아왔습니다! 살아남으세요!", NamedTextColor.RED));
         if (sirenPending) {
             sirenPending = false;
             siren.play();
@@ -425,9 +428,7 @@ public final class DisasterManager {
         Disaster ended = current;
         endCurrent();
         if (ended != null) {
-            Bukkit.broadcast(Component.text("[재해] ", NamedTextColor.GREEN)
-                    .append(ended.displayName())
-                    .append(Component.text(" 이(가) 지나갔습니다. 잠시 숨을 돌리세요.", NamedTextColor.WHITE)));
+            Bukkit.broadcast(Component.text("[재해] 재해가 지나갔습니다. 잠시 숨을 돌리세요.", NamedTextColor.GREEN));
             playSound(Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1f);
         }
         reviveWaiting();
