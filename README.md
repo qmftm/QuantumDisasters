@@ -21,6 +21,15 @@
 
 서바이벌·모험 모드 플레이어만 영향을 받습니다. (크리에이티브·관전자 제외)
 
+### 추가 예정
+
+- [ ] 홍수 (Flash Flood)
+- [ ] 뇌우 (Thunder Storm)
+- [ ] 화재 (Fire)
+- [ ] 쓰나미 (Tsunami)
+- [ ] 눈사태 (Avalanche)
+- [ ] 모래 폭풍 (Sandstorm)
+
 ## 명령어 (권한 `quantumdisasters.admin`, 기본 OP)
 
 | 명령어 | 설명 |
