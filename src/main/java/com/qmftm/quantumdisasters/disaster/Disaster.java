@@ -1,6 +1,7 @@
 package com.qmftm.quantumdisasters.disaster;
 
 import com.qmftm.quantumdisasters.QuantumDisasters;
+import com.qmftm.quantumdisasters.platform.Fx;
 import com.qmftm.quantumdisasters.platform.Platforms;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
@@ -105,7 +106,7 @@ public abstract class Disaster {
 
     /**
      * 파티클을 뿌립니다. 양은 particles 배율에 맞춰 조절되고, 멀리서도 보이게 합니다.
-     * (재해는 규모가 커서 멀리서도 보여야 함)
+     * Bedrock 플레이어에게는 Bedrock 에서 잘 보이는 파티클로 바꿔 보냅니다. (Fx 참고)
      */
     protected <T> void fx(Particle particle, Location at, int count, double ox, double oy, double oz, double extra, T data) {
         double scaled = count * particleAmount();
@@ -116,7 +117,7 @@ public abstract class Disaster {
         if (n <= 0 && count > 0) {
             return;
         }
-        at.getWorld().spawnParticle(particle, at, n, ox, oy, oz, extra, data, true);
+        Fx.spawn(particle, at, n, ox, oy, oz, extra, data);
     }
 
     protected void fx(Particle particle, Location at, int count, double ox, double oy, double oz, double extra) {
@@ -128,7 +129,7 @@ public abstract class Disaster {
         if (random().nextDouble() >= particleAmount()) {
             return;
         }
-        at.getWorld().spawnParticle(particle, at, 0, direction.getX(), direction.getY(), direction.getZ(), speed, data, true);
+        Fx.spawnMoving(particle, at, direction, speed, data);
     }
 
     /** 땅 위에 원을 그립니다. (경고 표시 등) */

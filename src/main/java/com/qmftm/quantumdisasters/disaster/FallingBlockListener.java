@@ -89,9 +89,9 @@ public final class FallingBlockListener implements Listener {
             for (int i = 0; i < points; i++) {
                 double a = Math.PI * 2 * i / points;
                 Location p = loc.clone().add(Math.cos(a) * r, 0.3, Math.sin(a) * r);
-                world.spawnParticle(Particle.CLOUD, p, 1, 0.1, 0.05, 0.1, 0.01, null, true);
+                com.qmftm.quantumdisasters.platform.Fx.spawn(Particle.CLOUD, p, 1, 0.1, 0.05, 0.1, 0.01, null);
                 if (i % 3 == 0) {
-                    world.spawnParticle(Particle.FLAME, p, 1, 0.1, 0.1, 0.1, 0.01, null, true);
+                    com.qmftm.quantumdisasters.platform.Fx.spawn(Particle.FLAME, p, 1, 0.1, 0.1, 0.1, 0.01, null);
                 }
             }
             if (++step[0] >= 8) {
@@ -101,8 +101,8 @@ public final class FallingBlockListener implements Listener {
         // 충돌 지점에 한동안 연기 기둥이 남음
         int[] smoke = {0};
         org.bukkit.Bukkit.getScheduler().runTaskTimer(plugin, task -> {
-            world.spawnParticle(Particle.CAMPFIRE_SIGNAL_SMOKE, loc, (int) Math.ceil(2 * amount), 0.6, 0.2, 0.6, 0.02, null, true);
-            world.spawnParticle(Particle.LARGE_SMOKE, loc, (int) Math.ceil(2 * amount), 0.8, 0.3, 0.8, 0.01, null, true);
+            com.qmftm.quantumdisasters.platform.Fx.spawn(Particle.CAMPFIRE_SIGNAL_SMOKE, loc, (int) Math.ceil(2 * amount), 0.6, 0.2, 0.6, 0.02, null);
+            com.qmftm.quantumdisasters.platform.Fx.spawn(Particle.LARGE_SMOKE, loc, (int) Math.ceil(2 * amount), 0.8, 0.3, 0.8, 0.01, null);
             if (++smoke[0] >= 20) {
                 task.cancel();
             }

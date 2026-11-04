@@ -2,7 +2,7 @@ name: QuantumDisasters
 version: '${project.version}'
 main: com.qmftm.quantumdisasters.QuantumDisasters
 api-version: '26.3'
-softdepend: [floodgate]
+softdepend: [floodgate, Geyser-Spigot]
 description: 게임이 시작되면 주기적으로 무작위 자연재해가 찾아옵니다.
 commands:
   quantumdisasters:

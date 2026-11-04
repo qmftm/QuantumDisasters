@@ -35,6 +35,13 @@
             <version>${paper.version}</version>
             <scope>provided</scope>
         </dependency>
+        <!-- Bedrock 플레이어 구분용 (Floodgate 없이 Geyser 만 있는 서버). 없어도 플러그인은 동작합니다. -->
+        <dependency>
+            <groupId>org.geysermc.geyser</groupId>
+            <artifactId>api</artifactId>
+            <version>2.12.1-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
         <!-- Bedrock(Geyser) 플레이어 구분용. 서버에 Floodgate 가 없어도 플러그인은 동작합니다. -->
         <dependency>
             <groupId>org.geysermc.floodgate</groupId>

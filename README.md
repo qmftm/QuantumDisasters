@@ -153,7 +153,17 @@
   - `/qd players` 로 Java/Bedrock(기기), 목숨 상태 확인
   - 지진·토네이도가 Bedrock 플레이어를 밀어내는 세기를 `bedrock.knockback-multiplier`(기본 0.7)로 약하게
 - 플레이어는 UUID 로 관리하므로 Floodgate 플레이어(이름 앞 `.` 등)도 목숨·부활이 정상 동작합니다
-- 새 재해를 추가할 때도 위 규칙을 지켜주세요
+- Floodgate 가 없어도 같은 서버에 Geyser 가 있으면 Geyser 로 Bedrock 플레이어를 구분합니다
+- **파티클**: Geyser 가 Java 파티클을 Bedrock 파티클로 바꿔 주는데, 일부는 Bedrock 에서 안 보이거나 작게 보입니다. 그래서 Bedrock 플레이어에게만 잘 보이는 파티클로 바꿔 보냅니다 (`platform/Fx.java`).
+  | Java 파티클 | Bedrock 에서 문제 | Bedrock 에는 대신 |
+  |---|---|---|
+  | ASH, WHITE_ASH | 선택 리소스팩 없으면 안 보임 | 검은/흰 가루가 떨어지는 파티클 |
+  | FLASH | 선택 리소스팩 없으면 안 보임 | 빛 알갱이가 터지는 효과 |
+  | CLOUD | 아주 작은 김 | 흰 연기 뭉치 |
+  | LARGE_SMOKE | 작은 김 | 모닥불 연기 |
+  | 날아가는 방향이 있는 파티클 | 제자리에 한 점 | 진행 방향으로 짧은 줄 |
+- **소리**: 쓰는 소리는 모두 Geyser 소리표에 있고, 사이렌·가이거 계수기의 음 높이 변화도 Bedrock 에 그대로 전달됩니다
+- 새 재해를 추가할 때도 위 규칙을 지켜주세요 (파티클은 `fx()` 로 보내기)
 
 ## 빌드
 

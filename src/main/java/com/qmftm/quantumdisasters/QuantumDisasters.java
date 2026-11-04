@@ -17,9 +17,9 @@ public final class QuantumDisasters extends JavaPlugin {
     public void onEnable() {
         saveDefaultConfig();
         Platforms.init();
-        getLogger().info(Platforms.hasFloodgate()
-                ? "Floodgate 연동됨: Bedrock 플레이어를 구분합니다."
-                : "Floodgate 없음: 모든 플레이어를 Java 로 취급합니다.");
+        getLogger().info(Platforms.hasFloodgate() ? "Floodgate 연동됨: Bedrock 플레이어를 구분합니다."
+                : Platforms.canDetect() ? "Geyser 연동됨: Bedrock 플레이어를 구분합니다."
+                : "Floodgate/Geyser 없음: 모든 플레이어를 Java 로 취급합니다.");
 
         disasterManager = new DisasterManager(this);
         radiation = new RadiationService(this);
