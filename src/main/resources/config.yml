@@ -59,6 +59,11 @@ siren:
   # 살짝 어긋난 음을 하나 더 겹쳐 불길하게 (1 또는 0 이면 끔, 1.06 = 반음 정도 높게)
   detune: 1.06
 
+# Bedrock(Geyser + Floodgate) 플레이어 설정. Floodgate 가 없으면 무시됩니다.
+bedrock:
+  # 지진/토네이도가 Bedrock 플레이어를 밀어내는 세기 배율 (Bedrock 에서 덜컹거림 완화)
+  knockback-multiplier: 0.7
+
 # 재해가 블록을 부술 수 있는지 여부
 block-damage: true
 

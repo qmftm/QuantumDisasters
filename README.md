@@ -57,6 +57,7 @@
 | `/qd trigger <id>` | 특정 재해 즉시 발생 |
 | `/qd list` | 재해 목록 |
 | `/qd status` | 현재 상태 |
+| `/qd players` | 플레이어 목록 (Java/Bedrock, 목숨) |
 | `/qd siren` | 사이렌 테스트 (모든 접속자에게 들림) |
 | `/qd reload` | config.yml 다시 불러오기 |
 
@@ -80,6 +81,7 @@
 | `siren.cycles` / `interval-ticks` / `volume` | `1` / `1` / `1.0` | 반복 횟수, 소리 간격(틱), 음량 |
 | `siren.wobble` / `wobble-ticks` | `0.4` / `24` | 회전하는 경보기처럼 크기가 흔들리는 정도·주기 |
 | `siren.detune` | `1.06` | 살짝 어긋난 음을 겹침 (1 이면 끔) |
+| `bedrock.knockback-multiplier` | `0.7` | Bedrock 플레이어를 밀어내는 세기 배율 |
 | `block-damage` | `true` | 재해가 블록을 부술지 여부 |
 | `worlds` | `[]` | 재해가 일어날 월드 (비우면 전체) |
 | `disasters.<id>.enabled` / `duration-seconds` | | 재해별 켜기·끄기, 한 번의 지속 시간 |
@@ -90,6 +92,9 @@
 
 - 화면 표시는 Bedrock 에서도 보이는 것만 사용합니다: 액션바, 타이틀, 보스바, 채팅
 - 재해 이름에 이모지/특수 기호를 쓰지 않습니다 (Bedrock 글꼴에서 네모로 깨질 수 있음)
+- Floodgate 가 있으면 Bedrock 플레이어를 구분합니다 (`softdepend`, 없어도 동작)
+  - `/qd players` 로 Java/Bedrock(기기), 목숨 상태 확인
+  - 지진·토네이도가 Bedrock 플레이어를 밀어내는 세기를 `bedrock.knockback-multiplier`(기본 0.7)로 약하게
 - 플레이어는 UUID 로 관리하므로 Floodgate 플레이어(이름 앞 `.` 등)도 목숨·부활이 정상 동작합니다
 - 새 재해를 추가할 때도 위 규칙을 지켜주세요
 

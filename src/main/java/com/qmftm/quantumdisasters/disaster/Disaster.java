@@ -1,6 +1,7 @@
 package com.qmftm.quantumdisasters.disaster;
 
 import com.qmftm.quantumdisasters.QuantumDisasters;
+import com.qmftm.quantumdisasters.platform.Platforms;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -8,6 +9,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.TileState;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.MemoryConfiguration;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
@@ -94,6 +96,17 @@ public abstract class Disaster {
             entry.getKey().setThundering(entry.getValue()[1]);
         }
         savedWeather.clear();
+    }
+
+    /**
+     * 엔티티를 밀어냅니다. Bedrock 플레이어는 밀어내기가 덜컹거려 보일 수 있어
+     * config 의 bedrock.knockback-multiplier 만큼 약하게 밉니다.
+     */
+    protected void push(Entity entity, Vector velocity) {
+        if (entity instanceof Player player && Platforms.isBedrock(player)) {
+            velocity = velocity.clone().multiply(plugin.getConfig().getDouble("bedrock.knockback-multiplier", 0.7));
+        }
+        entity.setVelocity(velocity);
     }
 
     /** 플레이어 머리 위가 하늘로 뚫려 있는지 (지붕 아래가 아닌지). */

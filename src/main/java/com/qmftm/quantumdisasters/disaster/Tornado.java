@@ -147,7 +147,7 @@ public final class Tornado extends Disaster {
             if (height > HEIGHT - 6 && random().nextInt(15) == 0) {
                 push = offset.clone().normalize().multiply(1.5).setY(0.6);
             }
-            entity.setVelocity(push);
+            push(entity, push);
             entity.setFallDistance(0);
         }
     }

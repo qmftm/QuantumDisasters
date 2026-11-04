@@ -13,7 +13,7 @@ import java.util.Locale;
 
 public final class DisasterCommand implements TabExecutor {
 
-    private static final List<String> SUBCOMMANDS = List.of("start", "stop", "skip", "trigger", "list", "status", "siren", "reload");
+    private static final List<String> SUBCOMMANDS = List.of("start", "stop", "skip", "trigger", "list", "status", "players", "siren", "reload");
 
     private final QuantumDisasters plugin;
 
@@ -90,6 +90,12 @@ public final class DisasterCommand implements TabExecutor {
                 }
                 sender.sendMessage(msg);
             }
+            case "players" -> {
+                sender.sendMessage(Component.text("[재해] 플레이어 목록", NamedTextColor.GOLD));
+                for (String line : manager.describePlayers()) {
+                    sender.sendMessage(Component.text(" - " + line, NamedTextColor.GRAY));
+                }
+            }
             case "siren" -> {
                 manager.siren().play();
                 ok(sender, "사이렌을 테스트로 울립니다. (모든 접속자에게 들림)");
@@ -124,6 +130,7 @@ public final class DisasterCommand implements TabExecutor {
         sender.sendMessage(Component.text(" /" + label + " trigger <재해> - 특정 재해 즉시 발생", NamedTextColor.GRAY));
         sender.sendMessage(Component.text(" /" + label + " list - 재해 목록", NamedTextColor.GRAY));
         sender.sendMessage(Component.text(" /" + label + " status - 현재 상태", NamedTextColor.GRAY));
+        sender.sendMessage(Component.text(" /" + label + " players - 플레이어 목록 (Java/Bedrock, 목숨)", NamedTextColor.GRAY));
         sender.sendMessage(Component.text(" /" + label + " siren - 사이렌 테스트", NamedTextColor.GRAY));
         sender.sendMessage(Component.text(" /" + label + " reload - 설정 다시 불러오기", NamedTextColor.GRAY));
     }

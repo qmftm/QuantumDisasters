@@ -35,7 +35,7 @@ public final class Earthquake extends Disaster {
         for (Player player : targets()) {
             if (elapsed % 4 == 0 && player.isOnGround()) {
                 Vector shake = new Vector(random().nextDouble(-0.25, 0.25), 0.12, random().nextDouble(-0.25, 0.25));
-                player.setVelocity(player.getVelocity().add(shake));
+                push(player, player.getVelocity().add(shake));
             }
             if (elapsed % 40 == 1) {
                 player.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 100, 0, false, false));

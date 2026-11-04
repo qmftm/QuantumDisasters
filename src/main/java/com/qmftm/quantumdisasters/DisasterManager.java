@@ -7,6 +7,7 @@ import com.qmftm.quantumdisasters.disaster.Earthquake;
 import com.qmftm.quantumdisasters.disaster.MeteorShower;
 import com.qmftm.quantumdisasters.disaster.ThunderStorm;
 import com.qmftm.quantumdisasters.disaster.Tornado;
+import com.qmftm.quantumdisasters.platform.Platforms;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -489,6 +490,28 @@ public final class DisasterManager {
             return;
         }
         participants.put(player.getUniqueId(), new Participant(maxLives(), mode));
+    }
+
+    /** /qd players 용: 접속 중인 플레이어마다 "이름 - 플랫폼 - 상태" 한 줄씩. */
+    public List<String> describePlayers() {
+        List<String> lines = new ArrayList<>();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            Participant p = participants.get(player.getUniqueId());
+            String status;
+            if (!isRunning()) {
+                status = "게임 대기";
+            } else if (p == null) {
+                status = "참가 안 함 (" + player.getGameMode().name().toLowerCase() + ")";
+            } else {
+                status = switch (p.status) {
+                    case ALIVE -> respawnMode() == RespawnMode.LIVES ? "생존 (목숨 " + p.lives + ")" : "생존";
+                    case WAITING_RESPAWN -> "부활 대기";
+                    case ELIMINATED -> "탈락";
+                };
+            }
+            lines.add(player.getName() + " - " + Platforms.describe(player) + " - " + status);
+        }
+        return lines;
     }
 
     void onDeath(Player player) {
