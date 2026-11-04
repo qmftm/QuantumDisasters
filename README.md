@@ -74,8 +74,11 @@
 | `interval-seconds` | `45` | 재해 사이 휴식 시간 (0 = 쉬지 않음) |
 | `warning-seconds` | `5` | 경고 카운트다운 |
 | `siren.sound` | `minecraft:block.note_block.didgeridoo` | 사이렌 소리 (목록으로 쓰면 겹쳐 재생, 리소스팩 커스텀 소리 가능) |
-| `siren.min-pitch` / `max-pitch` | `0.5` / `1.2` | 음 높이 범위 (0.5~2.0, 낮을수록 어두움) |
-| `siren.volume` / `cycles` / `cycle-ticks` / `interval-ticks` | `1.0` / `3` / `40` / `2` | 음량, 오르내리는 횟수, 한 번 오르내리는 시간(틱), 소리 간격(틱) |
+| `siren.min-pitch` / `max-pitch` | `0.5` / `1.3` | 음 높이 범위 (0.5~2.0, 낮을수록 어두움) |
+| `siren.rise-ticks` / `hold-ticks` / `fall-ticks` | `60` / `30` / `100` | 올라가는 / 버티는 / 내려가는 시간(틱) |
+| `siren.cycles` / `interval-ticks` / `volume` | `1` / `1` / `1.0` | 반복 횟수, 소리 간격(틱), 음량 |
+| `siren.wobble` / `wobble-ticks` | `0.4` / `24` | 회전하는 경보기처럼 크기가 흔들리는 정도·주기 |
+| `siren.detune` | `1.06` | 살짝 어긋난 음을 겹침 (1 이면 끔) |
 | `block-damage` | `true` | 재해가 블록을 부술지 여부 |
 | `worlds` | `[]` | 재해가 일어날 월드 (비우면 전체) |
 | `disasters.<id>.enabled` / `duration-seconds` | | 재해별 켜기·끄기, 한 번의 지속 시간 |
