@@ -52,6 +52,19 @@ public abstract class Disaster {
         restoreWeather();
     }
 
+    /**
+     * true 면 duration-seconds 가 지나면 끝나고 보스바에 남은 시간이 보입니다.
+     * false 면 isOver() 가 true 가 될 때 끝나며 남은 시간을 보여주지 않습니다.
+     */
+    public boolean hasFixedDuration() {
+        return true;
+    }
+
+    /** hasFixedDuration() 이 false 인 재해가 스스로 끝날 때를 알려줍니다. */
+    public boolean isOver(int elapsed) {
+        return false;
+    }
+
     public boolean enabled() {
         return config().getBoolean("enabled", true);
     }

@@ -11,14 +11,17 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 public final class GameListener implements Listener {
 
     private final DisasterManager manager;
+    private final com.qmftm.quantumdisasters.radiation.RadiationService radiation;
 
-    public GameListener(DisasterManager manager) {
+    public GameListener(DisasterManager manager, com.qmftm.quantumdisasters.radiation.RadiationService radiation) {
         this.manager = manager;
+        this.radiation = radiation;
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onDeath(PlayerDeathEvent event) {
         manager.onDeath(event.getPlayer());
+        radiation.onDeath(event.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -29,5 +32,6 @@ public final class GameListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
         manager.onJoin(event.getPlayer());
+        radiation.onJoin(event.getPlayer());
     }
 }

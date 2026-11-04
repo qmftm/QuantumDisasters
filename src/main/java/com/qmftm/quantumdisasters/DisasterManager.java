@@ -5,6 +5,7 @@ import com.qmftm.quantumdisasters.disaster.Blizzard;
 import com.qmftm.quantumdisasters.disaster.Disaster;
 import com.qmftm.quantumdisasters.disaster.Earthquake;
 import com.qmftm.quantumdisasters.disaster.MeteorShower;
+import com.qmftm.quantumdisasters.disaster.SolarStorm;
 import com.qmftm.quantumdisasters.disaster.ThunderStorm;
 import com.qmftm.quantumdisasters.disaster.Tornado;
 import com.qmftm.quantumdisasters.platform.Platforms;
@@ -99,6 +100,7 @@ public final class DisasterManager {
         register(new AcidRain(plugin));
         register(new Tornado(plugin));
         register(new Blizzard(plugin));
+        register(new SolarStorm(plugin));
     }
 
     private void register(Disaster disaster) {
@@ -177,6 +179,7 @@ public final class DisasterManager {
 
         day = 1;
         dayTicks = 0;
+        plugin.radiation().newGame();
         syncWorldTime();
         periodDisaster = pickNext(null);
         sirenPending = true;
@@ -382,7 +385,7 @@ public final class DisasterManager {
         }
 
         if (elapsed % 20 == 0) {
-            if (continuous()) {
+            if (continuous() || !current.hasFixedDuration()) {
                 bossBar.name(HIDDEN_NAME);
                 bossBar.progress(1f);
             } else {
@@ -392,7 +395,8 @@ public final class DisasterManager {
             }
         }
 
-        if (!continuous() && elapsed >= duration) {
+        boolean timeUp = !continuous() && current.hasFixedDuration() && elapsed >= duration;
+        if (timeUp || current.isOver(elapsed)) {
             finishDisaster();
         }
     }

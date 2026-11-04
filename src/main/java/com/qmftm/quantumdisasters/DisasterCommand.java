@@ -13,7 +13,7 @@ import java.util.Locale;
 
 public final class DisasterCommand implements TabExecutor {
 
-    private static final List<String> SUBCOMMANDS = List.of("start", "stop", "skip", "trigger", "list", "status", "players", "plate", "siren", "reload");
+    private static final List<String> SUBCOMMANDS = List.of("start", "stop", "skip", "trigger", "list", "status", "players", "plate", "siren", "give", "dose", "reload");
 
     private final QuantumDisasters plugin;
 
@@ -103,6 +103,29 @@ public final class DisasterCommand implements TabExecutor {
                 }
                 PlateInfo.show(plugin, player, args.length >= 2 && args[1].equalsIgnoreCase("show"));
             }
+            case "give" -> {
+                // /qd give geiger [플레이어]
+                if (args.length < 2 || !args[1].equalsIgnoreCase("geiger")) {
+                    err(sender, "사용법: /" + label + " give geiger [플레이어]");
+                    return true;
+                }
+                org.bukkit.entity.Player target = args.length >= 3 ? org.bukkit.Bukkit.getPlayerExact(args[2])
+                        : sender instanceof org.bukkit.entity.Player p ? p : null;
+                if (target == null) {
+                    err(sender, "플레이어를 찾을 수 없습니다.");
+                    return true;
+                }
+                target.getInventory().addItem(plugin.radiation().geiger().create());
+                ok(sender, target.getName() + " 님에게 가이거 계수기를 줬습니다.");
+            }
+            case "dose" -> {
+                // 관리자 확인용: 접속자들의 피폭량
+                sender.sendMessage(Component.text("[재해] 피폭량 (mSv)", NamedTextColor.GOLD));
+                for (org.bukkit.entity.Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
+                    sender.sendMessage(Component.text(String.format(" - %s: %.1f", p.getName(), plugin.radiation().dose(p)), NamedTextColor.GRAY));
+                }
+                sender.sendMessage(Component.text(" - 제작법: " + plugin.radiation().geiger().describeRecipe(), NamedTextColor.GRAY));
+            }
             case "siren" -> {
                 manager.siren().play();
                 ok(sender, "사이렌을 테스트로 울립니다. (모든 접속자에게 들림)");
@@ -110,6 +133,7 @@ public final class DisasterCommand implements TabExecutor {
             case "reload" -> {
                 plugin.reloadConfig();
                 plugin.plates().clear();
+                plugin.radiation().geiger().reload();
                 ok(sender, "설정을 다시 불러왔습니다.");
             }
             default -> sendHelp(sender, label);
@@ -124,6 +148,12 @@ public final class DisasterCommand implements TabExecutor {
             options.addAll(SUBCOMMANDS);
         } else if (args.length == 2 && args[0].equalsIgnoreCase("trigger")) {
             options.addAll(plugin.disasterManager().disasters().keySet());
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("give")) {
+            options.add("geiger");
+        } else if (args.length == 3 && args[0].equalsIgnoreCase("give")) {
+            for (org.bukkit.entity.Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
+                options.add(p.getName());
+            }
         } else if (args.length == 2 && args[0].equalsIgnoreCase("plate")) {
             options.add("show");
         }
@@ -142,6 +172,8 @@ public final class DisasterCommand implements TabExecutor {
         sender.sendMessage(Component.text(" /" + label + " status - 현재 상태", NamedTextColor.GRAY));
         sender.sendMessage(Component.text(" /" + label + " players - 플레이어 목록 (Java/Bedrock, 목숨)", NamedTextColor.GRAY));
         sender.sendMessage(Component.text(" /" + label + " plate [show] - 지금 위치의 판·경계 정보 (show: 경계선 표시)", NamedTextColor.GRAY));
+        sender.sendMessage(Component.text(" /" + label + " give geiger [플레이어] - 가이거 계수기 지급", NamedTextColor.GRAY));
+        sender.sendMessage(Component.text(" /" + label + " dose - 피폭량 확인", NamedTextColor.GRAY));
         sender.sendMessage(Component.text(" /" + label + " siren - 사이렌 테스트", NamedTextColor.GRAY));
         sender.sendMessage(Component.text(" /" + label + " reload - 설정 다시 불러오기", NamedTextColor.GRAY));
     }
