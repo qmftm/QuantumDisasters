@@ -1,5 +1,7 @@
 package com.qmftm.quantumdisasters;
 
+import com.qmftm.quantumdisasters.radiation.RadiationService;
+import com.qmftm.quantumdisasters.radio.Radio;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -11,11 +13,13 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 public final class GameListener implements Listener {
 
     private final DisasterManager manager;
-    private final com.qmftm.quantumdisasters.radiation.RadiationService radiation;
+    private final RadiationService radiation;
+    private final Radio radio;
 
-    public GameListener(DisasterManager manager, com.qmftm.quantumdisasters.radiation.RadiationService radiation) {
+    public GameListener(DisasterManager manager, RadiationService radiation, Radio radio) {
         this.manager = manager;
         this.radiation = radiation;
+        this.radio = radio;
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -33,5 +37,6 @@ public final class GameListener implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         manager.onJoin(event.getPlayer());
         radiation.onJoin(event.getPlayer());
+        radio.item().discover(event.getPlayer());
     }
 }

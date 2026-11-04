@@ -2,7 +2,11 @@ package com.qmftm.quantumdisasters.radiation;
 
 import com.qmftm.quantumdisasters.QuantumDisasters;
 import com.qmftm.quantumdisasters.disaster.Disaster;
+import com.qmftm.quantumdisasters.items.CraftableItem;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.GameMode;
 import org.bukkit.NamespacedKey;
 import org.bukkit.SoundCategory;
@@ -15,6 +19,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -32,7 +37,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class RadiationService {
 
     private final QuantumDisasters plugin;
-    private final GeigerCounter geiger;
+    private final CraftableItem geiger;
     private final NamespacedKey doseKey;
     private final NamespacedKey sessionKey;
     private final Map<UUID, Double> exposureCache = new HashMap<>();
@@ -42,12 +47,14 @@ public final class RadiationService {
 
     public RadiationService(QuantumDisasters plugin) {
         this.plugin = plugin;
-        this.geiger = new GeigerCounter(plugin);
+        this.geiger = new CraftableItem(plugin, "geiger_counter", "radiation.geiger-counter", Material.CLOCK,
+                Component.text("가이거 계수기", NamedTextColor.YELLOW),
+                List.of("손에 들고 있으면 주변 방사선을 측정합니다.", "딸깍이는 소리가 빠를수록 위험합니다."));
         this.doseKey = new NamespacedKey(plugin, "radiation_dose");
         this.sessionKey = new NamespacedKey(plugin, "radiation_session");
     }
 
-    public GeigerCounter geiger() {
+    public CraftableItem geiger() {
         return geiger;
     }
 
@@ -76,10 +83,7 @@ public final class RadiationService {
     }
 
     public void onJoin(Player player) {
-        if (config().getConfigurationSection("geiger-counter") == null
-                || config().getBoolean("geiger-counter.recipe.discover", true)) {
-            player.discoverRecipe(geiger.recipeKey());
-        }
+        geiger.discover(player);
     }
 
     public void onDeath(Player player) {

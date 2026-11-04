@@ -84,6 +84,8 @@ public final class DisasterManager {
     private State state = State.STOPPED;
     /** 지금 기간의 재해 (disaster-change-days 일마다 바뀜) */
     private Disaster periodDisaster;
+    /** 다음 기간에 올 재해 (미리 정해 둠 → 라디오 등 예측 아이템이 낌새를 알려줌) */
+    private Disaster upcoming;
     /** 지금 실제로 진행 중인 재해 (휴식 중이면 null) */
     private Disaster current;
     /** 다음에 재해가 시작될 때 사이렌을 울려야 하는지 (첫 재해이거나 재해가 바뀐 경우) */
@@ -127,6 +129,23 @@ public final class DisasterManager {
 
     public Disaster current() {
         return current;
+    }
+
+    public Disaster upcoming() {
+        return upcoming;
+    }
+
+    /**
+     * 다음 재해로 바뀌는 날이 얼마나 가까운지 (0 = 방금 바뀜, 1 = 곧 바뀜).
+     * 예측 아이템은 이 값이 클수록 또렷한 신호를 줍니다. 게임 중이 아니면 0.
+     */
+    public double changeProximity() {
+        if (!isRunning()) {
+            return 0;
+        }
+        double period = (double) changeDays() * dayLengthTicks();
+        double into = ((day - 1) % changeDays()) * (double) dayLengthTicks() + dayTicks;
+        return Math.max(0, Math.min(1, into / period));
     }
 
     public Disaster periodDisaster() {
@@ -192,6 +211,7 @@ public final class DisasterManager {
         plugin.radiation().newGame();
         syncWorldTime();
         periodDisaster = pickNext(null);
+        upcoming = pickNext(periodDisaster);
         sirenPending = true;
         startWaiting(config().getInt("first-delay-seconds", 15));
         task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1L, 1L);
@@ -224,6 +244,7 @@ public final class DisasterManager {
         }
         state = State.STOPPED;
         periodDisaster = null;
+        upcoming = null;
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.hideBossBar(bossBar);
             player.sendActionBar(Component.empty());
@@ -295,6 +316,9 @@ public final class DisasterManager {
             sirenPending = true;
         }
         periodDisaster = disaster;
+        if (upcoming == disaster || upcoming == null) {
+            upcoming = pickNext(disaster);
+        }
         begin(disaster);
     }
 
@@ -342,7 +366,9 @@ public final class DisasterManager {
                 endCurrent();
                 reviveWaiting();
             }
-            periodDisaster = pickNext(previous);
+            // 미리 정해 둔 다음 재해로 (그 사이 꺼졌으면 새로 뽑음)
+            periodDisaster = upcoming != null && upcoming.enabled() ? upcoming : pickNext(previous);
+            upcoming = pickNext(periodDisaster);
             sirenPending = true;
             if (periodDisaster == null) {
                 noDisasters();
@@ -373,6 +399,9 @@ public final class DisasterManager {
         if (waitTicks <= 0) {
             if (periodDisaster == null || !periodDisaster.enabled()) {
                 periodDisaster = pickNext(periodDisaster);
+                if (upcoming == periodDisaster) {
+                    upcoming = pickNext(periodDisaster);
+                }
                 sirenPending = true;
             }
             if (periodDisaster == null) {

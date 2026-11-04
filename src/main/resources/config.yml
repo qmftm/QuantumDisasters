@@ -97,6 +97,34 @@ radiation:
         G: minecraft:glass_pane
         I: minecraft:iron_ingot
 
+# 라디오: 다가오는(다음) 재해의 낌새를 어렴풋이 알려주는 예측 아이템
+# 손에 들면 지지직 잡음 사이로 다음 재해의 소리가 희미하게 섞이고, 라디오 주변에 관련 파티클이 피어오릅니다.
+# 재해가 바뀌는 날이 멀면 신호가 드물고 헛신호(다른 재해 소리)가 잦고, 가까울수록 잦고 크고 정확해집니다.
+radio:
+  item: minecraft:note_block
+  static-sound: minecraft:block.note_block.snare
+  static-volume: 0.12
+  # 1틱마다 잡음이 날 확률
+  static-chance: 0.5
+  # 1초에 신호가 섞이는 횟수 (바뀌는 날이 멀 때 / 가까울 때)
+  signals-per-second-far: 0.15
+  signals-per-second-near: 0.8
+  # 바뀌는 날이 막 지났을 때 헛신호 확률 (가까워질수록 0 으로 줄어듦)
+  decoy-chance-far: 0.6
+  # 제작법 (나중에 GUI 로 바꿀 수 있게 설정으로 둡니다. 바꾼 뒤 /qd reload)
+  recipe:
+    enabled: true
+    discover: true
+    shape:
+      - " A "
+      - "INI"
+      - "IRI"
+    ingredients:
+      A: minecraft:lightning_rod
+      I: minecraft:iron_ingot
+      N: minecraft:note_block
+      R: minecraft:redstone
+
 # Bedrock(Geyser + Floodgate) 플레이어 설정. Floodgate 가 없으면 무시됩니다.
 bedrock:
   # 지진/토네이도가 Bedrock 플레이어를 밀어내는 세기 배율 (Bedrock 에서 덜컹거림 완화)

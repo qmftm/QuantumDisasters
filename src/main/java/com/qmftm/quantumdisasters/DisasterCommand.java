@@ -88,6 +88,11 @@ public final class DisasterCommand implements TabExecutor {
                 if (manager.periodDisaster() != null) {
                     msg = msg.append(Component.text(" / 이번 재해: ", NamedTextColor.GRAY)).append(manager.periodDisaster().displayName());
                 }
+                if (manager.upcoming() != null) {
+                    msg = msg.append(Component.text(" / 다음 재해: ", NamedTextColor.GRAY))
+                            .append(manager.upcoming().displayName())
+                            .append(Component.text(String.format(" (바뀔 때까지 %.0f%% 지남)", manager.changeProximity() * 100), NamedTextColor.GRAY));
+                }
                 sender.sendMessage(msg);
             }
             case "players" -> {
@@ -104,9 +109,12 @@ public final class DisasterCommand implements TabExecutor {
                 PlateInfo.show(plugin, player, args.length >= 2 && args[1].equalsIgnoreCase("show"));
             }
             case "give" -> {
-                // /qd give geiger [플레이어]
-                if (args.length < 2 || !args[1].equalsIgnoreCase("geiger")) {
-                    err(sender, "사용법: /" + label + " give geiger [플레이어]");
+                // /qd give <geiger|radio> [플레이어]
+                com.qmftm.quantumdisasters.items.CraftableItem giveItem = args.length < 2 ? null
+                        : args[1].equalsIgnoreCase("geiger") ? plugin.radiation().geiger()
+                        : args[1].equalsIgnoreCase("radio") ? plugin.radio().item() : null;
+                if (giveItem == null) {
+                    err(sender, "사용법: /" + label + " give <geiger|radio> [플레이어]");
                     return true;
                 }
                 org.bukkit.entity.Player target = args.length >= 3 ? org.bukkit.Bukkit.getPlayerExact(args[2])
@@ -115,8 +123,8 @@ public final class DisasterCommand implements TabExecutor {
                     err(sender, "플레이어를 찾을 수 없습니다.");
                     return true;
                 }
-                target.getInventory().addItem(plugin.radiation().geiger().create());
-                ok(sender, target.getName() + " 님에게 가이거 계수기를 줬습니다.");
+                target.getInventory().addItem(giveItem.create());
+                ok(sender, target.getName() + " 님에게 " + args[1].toLowerCase() + " 을(를) 줬습니다.");
             }
             case "dose" -> {
                 // 관리자 확인용: 접속자들의 피폭량
@@ -124,7 +132,8 @@ public final class DisasterCommand implements TabExecutor {
                 for (org.bukkit.entity.Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
                     sender.sendMessage(Component.text(String.format(" - %s: %.1f", p.getName(), plugin.radiation().dose(p)), NamedTextColor.GRAY));
                 }
-                sender.sendMessage(Component.text(" - 제작법: " + plugin.radiation().geiger().describeRecipe(), NamedTextColor.GRAY));
+                sender.sendMessage(Component.text(" - 가이거 계수기 제작법: " + plugin.radiation().geiger().describeRecipe(), NamedTextColor.GRAY));
+                sender.sendMessage(Component.text(" - 라디오 제작법: " + plugin.radio().item().describeRecipe(), NamedTextColor.GRAY));
             }
             case "siren" -> {
                 manager.siren().play();
@@ -134,6 +143,7 @@ public final class DisasterCommand implements TabExecutor {
                 plugin.reloadConfig();
                 plugin.plates().clear();
                 plugin.radiation().geiger().reload();
+                plugin.radio().item().reload();
                 ok(sender, "설정을 다시 불러왔습니다.");
             }
             default -> sendHelp(sender, label);
@@ -150,6 +160,7 @@ public final class DisasterCommand implements TabExecutor {
             options.addAll(plugin.disasterManager().disasters().keySet());
         } else if (args.length == 2 && args[0].equalsIgnoreCase("give")) {
             options.add("geiger");
+            options.add("radio");
         } else if (args.length == 3 && args[0].equalsIgnoreCase("give")) {
             for (org.bukkit.entity.Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
                 options.add(p.getName());
@@ -172,7 +183,7 @@ public final class DisasterCommand implements TabExecutor {
         sender.sendMessage(Component.text(" /" + label + " status - 현재 상태", NamedTextColor.GRAY));
         sender.sendMessage(Component.text(" /" + label + " players - 플레이어 목록 (Java/Bedrock, 목숨)", NamedTextColor.GRAY));
         sender.sendMessage(Component.text(" /" + label + " plate [show] - 지금 위치의 판·경계 정보 (show: 경계선 표시)", NamedTextColor.GRAY));
-        sender.sendMessage(Component.text(" /" + label + " give geiger [플레이어] - 가이거 계수기 지급", NamedTextColor.GRAY));
+        sender.sendMessage(Component.text(" /" + label + " give <geiger|radio> [플레이어] - 가이거 계수기 / 라디오 지급", NamedTextColor.GRAY));
         sender.sendMessage(Component.text(" /" + label + " dose - 피폭량 확인", NamedTextColor.GRAY));
         sender.sendMessage(Component.text(" /" + label + " siren - 사이렌 테스트", NamedTextColor.GRAY));
         sender.sendMessage(Component.text(" /" + label + " reload - 설정 다시 불러오기", NamedTextColor.GRAY));

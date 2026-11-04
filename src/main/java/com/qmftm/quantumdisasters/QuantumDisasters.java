@@ -3,6 +3,8 @@ package com.qmftm.quantumdisasters;
 import com.qmftm.quantumdisasters.disaster.FallingBlockListener;
 import com.qmftm.quantumdisasters.platform.Platforms;
 import com.qmftm.quantumdisasters.radiation.RadiationService;
+import com.qmftm.quantumdisasters.radio.Radio;
+import com.qmftm.quantumdisasters.items.ItemListener;
 import com.qmftm.quantumdisasters.tectonics.PlateRegistry;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -11,6 +13,7 @@ public final class QuantumDisasters extends JavaPlugin {
 
     private DisasterManager disasterManager;
     private RadiationService radiation;
+    private Radio radio;
     private final PlateRegistry plates = new PlateRegistry(this::getConfig);
 
     @Override
@@ -24,8 +27,12 @@ public final class QuantumDisasters extends JavaPlugin {
         disasterManager = new DisasterManager(this);
         radiation = new RadiationService(this);
         radiation.enable();
+        radio = new Radio(this);
+        radio.enable();
+        getServer().getPluginManager().registerEvents(
+                new ItemListener(java.util.List.of(radiation.geiger(), radio.item())), this);
         getServer().getPluginManager().registerEvents(new FallingBlockListener(this), this);
-        getServer().getPluginManager().registerEvents(new GameListener(disasterManager, radiation), this);
+        getServer().getPluginManager().registerEvents(new GameListener(disasterManager, radiation, radio), this);
 
         PluginCommand command = getCommand("quantumdisasters");
         if (command != null) {
@@ -48,6 +55,9 @@ public final class QuantumDisasters extends JavaPlugin {
         if (radiation != null) {
             radiation.disable();
         }
+        if (radio != null) {
+            radio.disable();
+        }
         // 물·불을 되돌리던 중이었다면 바로 마무리
         com.qmftm.quantumdisasters.disaster.TemporaryBlocks.flushPending();
     }
@@ -55,6 +65,11 @@ public final class QuantumDisasters extends JavaPlugin {
     /** 방사선 (가이거 계수기, 피폭량) */
     public RadiationService radiation() {
         return radiation;
+    }
+
+    /** 라디오 (다음 재해 예측) */
+    public Radio radio() {
+        return radio;
     }
 
     /** 월드 시드로 만든 지각판 지도 */
