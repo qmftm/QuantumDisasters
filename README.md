@@ -9,6 +9,8 @@
 - 그 기간 동안은 같은 재해가 휴식 시간을 사이에 두고 반복해서 찾아옵니다. (`interval-seconds: 0` 이면 쉬지 않고 계속)
 - `survive-days` 일을 버티면 **성공**, 리스폰 모드가 `unlimited` 가 아닐 때 모두 죽거나 탈락하면 **게임 오버**입니다.
 
+재해가 처음 시작되거나 다른 재해로 바뀔 때는 **사이렌**이 울립니다. (이름은 알려주지 않고 바뀌었다는 것만 알 수 있음, 같은 재해가 반복될 때는 울리지 않음)
+
 보스바에 다음 재해까지 남은 시간 / 진행 중인 재해가 표시되고, 재해 직전에 경고 카운트다운이 뜹니다.
 
 ## 리스폰 모드 (`respawn.mode`)
@@ -68,6 +70,8 @@
 | `first-delay-seconds` | `15` | 첫 재해까지 대기 시간 |
 | `interval-seconds` | `45` | 재해 사이 휴식 시간 (0 = 쉬지 않음) |
 | `warning-seconds` | `5` | 경고 카운트다운 |
+| `siren.sound` | `minecraft:block.note_block.flute` | 사이렌에 쓸 소리 (리소스팩 커스텀 소리 가능) |
+| `siren.volume` / `cycles` / `cycle-ticks` | `1.0` / `3` / `40` | 사이렌 음량, 오르내리는 횟수, 한 번 오르내리는 시간(틱) |
 | `block-damage` | `true` | 재해가 블록을 부술지 여부 |
 | `worlds` | `[]` | 재해가 일어날 월드 (비우면 전체) |
 | `disasters.<id>.enabled` / `duration-seconds` | | 재해별 켜기·끄기, 한 번의 지속 시간 |

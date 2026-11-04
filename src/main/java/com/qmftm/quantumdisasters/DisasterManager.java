@@ -76,6 +76,9 @@ public final class DisasterManager {
     private Disaster periodDisaster;
     /** 지금 실제로 진행 중인 재해 (휴식 중이면 null) */
     private Disaster current;
+    /** 다음에 재해가 시작될 때 사이렌을 울려야 하는지 (첫 재해이거나 재해가 바뀐 경우) */
+    private boolean sirenPending;
+    private final Siren siren;
     private int day;
     private int dayTicks;
     private int waitTicks;
@@ -85,6 +88,7 @@ public final class DisasterManager {
 
     public DisasterManager(QuantumDisasters plugin) {
         this.plugin = plugin;
+        this.siren = new Siren(plugin);
         register(new MeteorShower(plugin));
         register(new Earthquake(plugin));
         register(new ThunderStorm(plugin));
@@ -167,6 +171,7 @@ public final class DisasterManager {
         dayTicks = 0;
         syncWorldTime();
         periodDisaster = pickNext(null);
+        sirenPending = true;
         startWaiting(config().getInt("first-delay-seconds", 15));
         task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1L, 1L);
 
@@ -191,6 +196,7 @@ public final class DisasterManager {
 
     private void shutdown() {
         endCurrent();
+        siren.stop();
         if (task != null) {
             task.cancel();
             task = null;
@@ -265,6 +271,9 @@ public final class DisasterManager {
             start();
         }
         endCurrent();
+        if (disaster != periodDisaster) {
+            sirenPending = true;
+        }
         periodDisaster = disaster;
         begin(disaster);
     }
@@ -314,11 +323,11 @@ public final class DisasterManager {
                 reviveWaiting();
             }
             periodDisaster = pickNext(previous);
+            sirenPending = true;
             if (periodDisaster == null) {
                 noDisasters();
                 return;
             }
-            Bukkit.broadcast(Component.text("[재해] DAY " + day + " - 새로운 재해가 다가옵니다...", NamedTextColor.RED));
             startWaiting(Math.max(1, config().getInt("warning-seconds", 5)));
         }
     }
@@ -344,6 +353,7 @@ public final class DisasterManager {
         if (waitTicks <= 0) {
             if (periodDisaster == null || !periodDisaster.enabled()) {
                 periodDisaster = pickNext(periodDisaster);
+                sirenPending = true;
             }
             if (periodDisaster == null) {
                 noDisasters();
@@ -396,7 +406,12 @@ public final class DisasterManager {
                 .append(disaster.displayName())
                 .append(Component.text(" 이(가) 찾아왔습니다! ", NamedTextColor.WHITE))
                 .append(disaster.description()));
-        playSound(Sound.ENTITY_WITHER_SPAWN, 0.5f, 1f);
+        if (sirenPending) {
+            sirenPending = false;
+            siren.play();
+        } else {
+            playSound(Sound.ENTITY_WITHER_SPAWN, 0.5f, 1f);
+        }
 
         try {
             disaster.start();

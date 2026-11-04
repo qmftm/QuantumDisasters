@@ -32,6 +32,16 @@ interval-seconds: 45
 # 재해 시작 전 경고 카운트다운(초)
 warning-seconds: 5
 
+# 재해가 처음 시작되거나 다른 재해로 바뀔 때 울리는 사이렌
+siren:
+  # 사용할 소리 (리소스팩의 커스텀 소리도 가능)
+  sound: minecraft:block.note_block.flute
+  volume: 1.0
+  # 올라갔다 내려가는 횟수
+  cycles: 3
+  # 한 번 올라갔다 내려가는 데 걸리는 시간(틱, 20틱 = 1초)
+  cycle-ticks: 40
+
 # 재해가 블록을 부술 수 있는지 여부
 block-damage: true
 
