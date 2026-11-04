@@ -189,6 +189,7 @@ public final class DisasterManager {
         broadcastTitle(
                 Component.text("자연재해 게임 시작!", NamedTextColor.GOLD),
                 Component.text(goalText(), NamedTextColor.GRAY));
+        Bukkit.broadcast(Component.text("[재해] 게임 시작! " + goalText() + " / " + respawnText(), NamedTextColor.GOLD));
         playSound(Sound.ENTITY_ENDER_DRAGON_GROWL, 0.6f, 1.2f);
         sendDayActionBar();
         return true;
@@ -200,6 +201,7 @@ public final class DisasterManager {
             return false;
         }
         shutdown();
+        Bukkit.broadcast(Component.text("[재해] 자연재해 게임이 종료되었습니다.", NamedTextColor.YELLOW));
         return true;
     }
 
@@ -240,6 +242,7 @@ public final class DisasterManager {
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.showTitle(title);
         }
+        Bukkit.broadcast(Component.text("[재해] 생존 성공! " + surviveDays() + "일을 모두 버텨냈습니다!", NamedTextColor.GOLD));
         playSound(Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
         shutdown();
     }
@@ -252,6 +255,7 @@ public final class DisasterManager {
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.showTitle(title);
         }
+        Bukkit.broadcast(Component.text("[재해] 게임 오버! 버틴 날: " + (day - 1) + "일", NamedTextColor.RED));
         playSound(Sound.ENTITY_WITHER_DEATH, 0.6f, 1f);
         shutdown();
     }
@@ -526,11 +530,15 @@ public final class DisasterManager {
                 p.lives--;
                 if (p.lives <= 0) {
                     p.status = LifeStatus.ELIMINATED;
+                    Bukkit.broadcast(Component.text("[재해] " + player.getName() + " 님이 탈락했습니다.", NamedTextColor.RED));
+                } else {
+                    player.sendMessage(Component.text("[재해] 남은 목숨: " + p.lives, NamedTextColor.YELLOW));
                 }
             }
             case AFTER_DISASTER -> {
                 if (state == State.ACTIVE) {
                     p.status = LifeStatus.WAITING_RESPAWN;
+                    player.sendMessage(Component.text("[재해] 이번 재해가 끝나면 부활합니다.", NamedTextColor.YELLOW));
                 }
             }
         }
@@ -579,6 +587,7 @@ public final class DisasterManager {
             }
             p.status = LifeStatus.ALIVE;
             revive(player, p.originalMode);
+            player.sendMessage(Component.text("[재해] 재해를 버텨내어 부활했습니다!", NamedTextColor.GREEN));
         }
     }
 
@@ -681,6 +690,14 @@ public final class DisasterManager {
 
     private String goalText() {
         return surviveDays() > 0 ? surviveDays() + "일을 버티세요!" : "최대한 오래 버티세요!";
+    }
+
+    private String respawnText() {
+        return switch (respawnMode()) {
+            case UNLIMITED -> "무한 리스폰";
+            case LIVES -> "목숨 " + maxLives() + "개";
+            case AFTER_DISASTER -> "죽으면 재해가 끝날 때 부활";
+        };
     }
 
     private void updateBossBarViewers() {
