@@ -13,7 +13,7 @@ import java.util.Locale;
 
 public final class DisasterCommand implements TabExecutor {
 
-    private static final List<String> SUBCOMMANDS = List.of("start", "stop", "skip", "trigger", "list", "status", "players", "siren", "reload");
+    private static final List<String> SUBCOMMANDS = List.of("start", "stop", "skip", "trigger", "list", "status", "players", "plate", "siren", "reload");
 
     private final QuantumDisasters plugin;
 
@@ -96,12 +96,20 @@ public final class DisasterCommand implements TabExecutor {
                     sender.sendMessage(Component.text(" - " + line, NamedTextColor.GRAY));
                 }
             }
+            case "plate" -> {
+                if (!(sender instanceof org.bukkit.entity.Player player)) {
+                    err(sender, "게임 안에서만 쓸 수 있습니다.");
+                    return true;
+                }
+                PlateInfo.show(plugin, player, args.length >= 2 && args[1].equalsIgnoreCase("show"));
+            }
             case "siren" -> {
                 manager.siren().play();
                 ok(sender, "사이렌을 테스트로 울립니다. (모든 접속자에게 들림)");
             }
             case "reload" -> {
                 plugin.reloadConfig();
+                plugin.plates().clear();
                 ok(sender, "설정을 다시 불러왔습니다.");
             }
             default -> sendHelp(sender, label);
@@ -116,6 +124,8 @@ public final class DisasterCommand implements TabExecutor {
             options.addAll(SUBCOMMANDS);
         } else if (args.length == 2 && args[0].equalsIgnoreCase("trigger")) {
             options.addAll(plugin.disasterManager().disasters().keySet());
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("plate")) {
+            options.add("show");
         }
         String prefix = args.length == 0 ? "" : args[args.length - 1].toLowerCase(Locale.ROOT);
         options.removeIf(o -> !o.startsWith(prefix));
@@ -131,6 +141,7 @@ public final class DisasterCommand implements TabExecutor {
         sender.sendMessage(Component.text(" /" + label + " list - 재해 목록", NamedTextColor.GRAY));
         sender.sendMessage(Component.text(" /" + label + " status - 현재 상태", NamedTextColor.GRAY));
         sender.sendMessage(Component.text(" /" + label + " players - 플레이어 목록 (Java/Bedrock, 목숨)", NamedTextColor.GRAY));
+        sender.sendMessage(Component.text(" /" + label + " plate [show] - 지금 위치의 판·경계 정보 (show: 경계선 표시)", NamedTextColor.GRAY));
         sender.sendMessage(Component.text(" /" + label + " siren - 사이렌 테스트", NamedTextColor.GRAY));
         sender.sendMessage(Component.text(" /" + label + " reload - 설정 다시 불러오기", NamedTextColor.GRAY));
     }

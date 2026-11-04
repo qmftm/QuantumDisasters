@@ -2,12 +2,14 @@ package com.qmftm.quantumdisasters;
 
 import com.qmftm.quantumdisasters.disaster.MeteorListener;
 import com.qmftm.quantumdisasters.platform.Platforms;
+import com.qmftm.quantumdisasters.tectonics.PlateRegistry;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class QuantumDisasters extends JavaPlugin {
 
     private DisasterManager disasterManager;
+    private final PlateRegistry plates = new PlateRegistry(this::getConfig);
 
     @Override
     public void onEnable() {
@@ -39,6 +41,11 @@ public final class QuantumDisasters extends JavaPlugin {
         if (disasterManager != null) {
             disasterManager.stop();
         }
+    }
+
+    /** 월드 시드로 만든 지각판 지도 */
+    public PlateRegistry plates() {
+        return plates;
     }
 
     public DisasterManager disasterManager() {

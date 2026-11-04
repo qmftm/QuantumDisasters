@@ -91,11 +91,24 @@ disasters:
   earthquake:
     enabled: true
     duration-seconds: 25
+    # 지진은 월드 시드로 정해진 지각판의 경계에서 일어납니다. (/qd plate 로 확인)
+    #   발산형: 땅이 벌어지며 깊게 갈라짐, 바닥에 용암
+    #   수렴형: 땅이 솟아올라 능선이 생기고 바위가 굴러떨어짐, 가장 세게 흔들림
+    #   보존형: 경계 건너편 땅이 옆으로 어긋남, 경계와 나란히 흔들림
+    plates:
+      # 판 하나의 대략적인 크기(블록). 클수록 판이 크고 경계가 드묾
+      size: 600
+      # 같은 시드에서 다른 판 지도를 원하면 바꾸세요
+      salt: 0
+    # 경계에서 이 거리(블록)만큼 멀어지면 가장 약하게 흔들림
+    falloff: 200
+    # 경계가 이 거리(블록) 안에 있을 때만 땅이 갈라지거나 솟거나 어긋남
+    effect-range: 120
+    # 발산형 균열 바닥에 용암/마그마
+    rift-lava: true
+    # 주변 흔들림: 반경과 0.25초마다 튀어오르는 지면 블록 수
     radius: 30
-    # 0.25초마다 튀어오르는 지면 블록 수
     blocks-per-burst: 6
-    # 2초마다 땅이 길게 갈라질 확률 (플레이어마다)
-    fissure-chance: 0.6
   thunder_storm:
     enabled: true
     duration-seconds: 30
