@@ -1,13 +1,18 @@
 package com.qmftm.quantumdisasters;
 
 import com.qmftm.quantumdisasters.disaster.AcidRain;
+import com.qmftm.quantumdisasters.disaster.Avalanche;
 import com.qmftm.quantumdisasters.disaster.Blizzard;
 import com.qmftm.quantumdisasters.disaster.Disaster;
 import com.qmftm.quantumdisasters.disaster.Earthquake;
+import com.qmftm.quantumdisasters.disaster.FlashFlood;
 import com.qmftm.quantumdisasters.disaster.MeteorShower;
+import com.qmftm.quantumdisasters.disaster.Sandstorm;
 import com.qmftm.quantumdisasters.disaster.SolarStorm;
 import com.qmftm.quantumdisasters.disaster.ThunderStorm;
 import com.qmftm.quantumdisasters.disaster.Tornado;
+import com.qmftm.quantumdisasters.disaster.Tsunami;
+import com.qmftm.quantumdisasters.disaster.Wildfire;
 import com.qmftm.quantumdisasters.platform.Platforms;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
@@ -101,6 +106,11 @@ public final class DisasterManager {
         register(new Tornado(plugin));
         register(new Blizzard(plugin));
         register(new SolarStorm(plugin));
+        register(new FlashFlood(plugin));
+        register(new Wildfire(plugin));
+        register(new Tsunami(plugin));
+        register(new Avalanche(plugin));
+        register(new Sandstorm(plugin));
     }
 
     private void register(Disaster disaster) {

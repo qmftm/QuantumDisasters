@@ -186,6 +186,72 @@ disasters:
     safe-rate: 0.05
     # 아무리 길어도 이 시간(초)이 지나면 끝
     max-duration-seconds: 900
+  flash_flood:
+    enabled: true
+    duration-seconds: 45
+    # 플레이어 주변 몇 칸까지 물이 차오르는지
+    radius: 26
+    # 처음 높이보다 최대 몇 칸까지 차오르는지
+    max-rise: 7
+    # 0.1초마다 물을 채우는 칸 수 (클수록 빨리 차오름)
+    columns-per-tick: 140
+    # 물살이 떠미는 세기
+    current-strength: 0.12
+    # 끝나면 물이 빠질지 (false 면 그대로 남음)
+    drain: true
+  wildfire:
+    enabled: true
+    duration-seconds: 50
+    # 플레이어에게서 최대 몇 칸 떨어진 곳에 불이 나는지
+    radius: 40
+    # 3초마다 새로 불이 나는 곳 수
+    ignitions: 3
+    # 불이 옆으로 번질 확률
+    spread-chance: 0.35
+    # 불 하나가 타는 시간(틱). 끝나면 주변 나무·잎·풀이 타 없어짐
+    burn-ticks: 100
+    # 동시에 탈 수 있는 최대 불 개수 (서버 부하 제한)
+    max-fires: 600
+  tsunami:
+    enabled: true
+    # 쓰나미: 남은 시간은 보여주지 않고 마지막 파도가 지나가면 끝 (duration-seconds 는 쓰지 않음)
+    # 파도 수와 간격
+    waves: 2
+    first-wave-delay-seconds: 8
+    seconds-between-waves: 25
+    # 파도 높이(해수면 또는 플레이어 높이 기준), 폭, 속도(1틱에 몇 칸)
+    height: 12
+    width: 90
+    speed: 0.55
+    # 플레이어보다 몇 칸 먼 곳에서 시작해, 지나서 몇 칸 더 가는지
+    start-distance: 70
+    travel-beyond: 70
+    # 휩쓸리는 세기
+    push: 0.9
+  avalanche:
+    enabled: true
+    duration-seconds: 40
+    # 플레이어 주변 몇 칸 안에서 높은 곳을 찾는지
+    search-radius: 50
+    # 몇 초마다 눈사태가 나는지 / 한 번에 몇 초 동안 쏟아지는지
+    seconds-between-slides: 9
+    slide-seconds: 5
+    # 1틱에 쏟아지는 눈 덩어리 수, 눈사태 폭, 가루눈(빠지면 얼어붙음) 비율
+    blocks-per-tick: 6
+    width: 14
+    powder-snow-chance: 0.3
+  sandstorm:
+    enabled: true
+    duration-seconds: 45
+    radius: 30
+    # 바람에 떠밀리는 세기
+    wind-strength: 0.09
+    # 바깥에 있으면 앞이 안 보이게 (실명 효과)
+    blind: true
+    # 투구 없이 바깥에 있으면 3초마다 받는 피해
+    damage: 1.0
+    # 0.15초마다 모래로 바뀌는 지면 수
+    blocks-per-burst: 8
   blizzard:
     enabled: true
     duration-seconds: 40

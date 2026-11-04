@@ -14,27 +14,46 @@ import org.bukkit.util.Vector;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-/** 운석이 땅에 닿으면 블록으로 굳는 대신 폭발하게 합니다. */
-public final class MeteorListener implements Listener {
+/**
+ * 재해가 만든 떨어지는 블록을 처리합니다.
+ * <ul>
+ *     <li>운석: 땅에 닿으면 블록으로 굳는 대신 폭발</li>
+ *     <li>눈사태: block-damage 가 꺼져 있으면 쌓이지 않고 사라짐</li>
+ * </ul>
+ */
+public final class FallingBlockListener implements Listener {
 
     /** 이 세기 이상이면 거대 운석으로 보고 파편을 흩뿌립니다. */
     private static final float GIANT_POWER = 6f;
 
     private final QuantumDisasters plugin;
     private final NamespacedKey key;
+    private final NamespacedKey avalanche;
 
-    public MeteorListener(QuantumDisasters plugin) {
+    public FallingBlockListener(QuantumDisasters plugin) {
         this.plugin = plugin;
         this.key = key(plugin);
+        this.avalanche = avalancheKey(plugin);
     }
 
     static NamespacedKey key(QuantumDisasters plugin) {
         return new NamespacedKey(plugin, "meteor");
     }
 
+    static NamespacedKey avalancheKey(QuantumDisasters plugin) {
+        return new NamespacedKey(plugin, "avalanche");
+    }
+
     @EventHandler(ignoreCancelled = true)
     public void onLand(EntityChangeBlockEvent event) {
         if (!(event.getEntity() instanceof FallingBlock meteor)) {
+            return;
+        }
+        if (meteor.getPersistentDataContainer().has(avalanche)) {
+            if (!plugin.getConfig().getBoolean("block-damage", true)) {
+                event.setCancelled(true);
+                meteor.remove();
+            }
             return;
         }
         Float power = meteor.getPersistentDataContainer().get(key, PersistentDataType.FLOAT);

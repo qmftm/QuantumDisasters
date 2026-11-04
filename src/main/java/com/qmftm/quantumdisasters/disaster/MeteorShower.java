@@ -26,7 +26,7 @@ public final class MeteorShower extends Disaster {
 
     public MeteorShower(QuantumDisasters plugin) {
         super(plugin, "meteor");
-        this.meteorKey = MeteorListener.key(plugin);
+        this.meteorKey = FallingBlockListener.key(plugin);
     }
 
     @Override

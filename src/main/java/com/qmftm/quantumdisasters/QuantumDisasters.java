@@ -1,6 +1,6 @@
 package com.qmftm.quantumdisasters;
 
-import com.qmftm.quantumdisasters.disaster.MeteorListener;
+import com.qmftm.quantumdisasters.disaster.FallingBlockListener;
 import com.qmftm.quantumdisasters.platform.Platforms;
 import com.qmftm.quantumdisasters.radiation.RadiationService;
 import com.qmftm.quantumdisasters.tectonics.PlateRegistry;
@@ -24,7 +24,7 @@ public final class QuantumDisasters extends JavaPlugin {
         disasterManager = new DisasterManager(this);
         radiation = new RadiationService(this);
         radiation.enable();
-        getServer().getPluginManager().registerEvents(new MeteorListener(this), this);
+        getServer().getPluginManager().registerEvents(new FallingBlockListener(this), this);
         getServer().getPluginManager().registerEvents(new GameListener(disasterManager, radiation), this);
 
         PluginCommand command = getCommand("quantumdisasters");
@@ -48,6 +48,8 @@ public final class QuantumDisasters extends JavaPlugin {
         if (radiation != null) {
             radiation.disable();
         }
+        // 물·불을 되돌리던 중이었다면 바로 마무리
+        com.qmftm.quantumdisasters.disaster.TemporaryBlocks.flushPending();
     }
 
     /** 방사선 (가이거 계수기, 피폭량) */
