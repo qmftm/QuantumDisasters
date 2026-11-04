@@ -73,8 +73,9 @@
 | `first-delay-seconds` | `15` | 첫 재해까지 대기 시간 |
 | `interval-seconds` | `45` | 재해 사이 휴식 시간 (0 = 쉬지 않음) |
 | `warning-seconds` | `5` | 경고 카운트다운 |
-| `siren.sound` | `minecraft:block.note_block.flute` | 사이렌에 쓸 소리 (리소스팩 커스텀 소리 가능) |
-| `siren.volume` / `cycles` / `cycle-ticks` | `1.0` / `3` / `40` | 사이렌 음량, 오르내리는 횟수, 한 번 오르내리는 시간(틱) |
+| `siren.sound` | `minecraft:block.note_block.didgeridoo` | 사이렌 소리 (목록으로 쓰면 겹쳐 재생, 리소스팩 커스텀 소리 가능) |
+| `siren.min-pitch` / `max-pitch` | `0.5` / `1.2` | 음 높이 범위 (0.5~2.0, 낮을수록 어두움) |
+| `siren.volume` / `cycles` / `cycle-ticks` / `interval-ticks` | `1.0` / `3` / `40` / `2` | 음량, 오르내리는 횟수, 한 번 오르내리는 시간(틱), 소리 간격(틱) |
 | `block-damage` | `true` | 재해가 블록을 부술지 여부 |
 | `worlds` | `[]` | 재해가 일어날 월드 (비우면 전체) |
 | `disasters.<id>.enabled` / `duration-seconds` | | 재해별 켜기·끄기, 한 번의 지속 시간 |

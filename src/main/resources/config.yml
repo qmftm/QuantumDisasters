@@ -34,13 +34,19 @@ warning-seconds: 5
 
 # 재해가 처음 시작되거나 다른 재해로 바뀔 때 울리는 사이렌
 siren:
-  # 사용할 소리 (리소스팩의 커스텀 소리도 가능)
-  sound: minecraft:block.note_block.flute
+  # 사용할 소리. 여러 개를 목록으로 쓰면 겹쳐서 재생합니다. (리소스팩의 커스텀 소리도 가능)
+  #   예) sound: [minecraft:block.note_block.didgeridoo, minecraft:block.note_block.trumpet_oxidized]
+  sound: minecraft:block.note_block.didgeridoo
   volume: 1.0
+  # 음 높이 범위 (0.5 ~ 2.0, 낮을수록 어둡고 묵직함)
+  min-pitch: 0.5
+  max-pitch: 1.2
   # 올라갔다 내려가는 횟수
   cycles: 3
   # 한 번 올라갔다 내려가는 데 걸리는 시간(틱, 20틱 = 1초)
   cycle-ticks: 40
+  # 소리를 몇 틱마다 한 번씩 낼지 (긴 소리일수록 크게)
+  interval-ticks: 2
 
 # 재해가 블록을 부술 수 있는지 여부
 block-damage: true
