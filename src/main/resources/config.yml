@@ -70,26 +70,59 @@ block-damage: true
 # 재해가 일어날 월드 목록 (비워두면 모든 월드)
 worlds: []
 
+# 전체 재해 세기 배율. 운석 수, 벼락 수, 부서지는 블록 수 같은 "양"에 곱해집니다.
+# 0.5 = 절반, 1.0 = 기본, 2.0 = 두 배
+intensity: 1.0
+
 # 각 재해 설정. enabled: false 로 끄거나 duration-seconds 로 한 번의 지속 시간을 바꿀 수 있습니다.
+# radius 는 플레이어 주변 몇 칸까지 영향을 주는지입니다.
 disasters:
   meteor:
     enabled: true
     duration-seconds: 30
-    meteors-per-second: 2
-    explosion-power: 3.0
+    meteors-per-second: 5
+    # 플레이어 주변 몇 칸 범위에 떨어지는지 / 몇 칸 위에서 떨어지는지
+    spread: 45
+    height: 70
+    explosion-power: 4.0
+    # 거대 운석: 나올 확률과 폭발 세기 (파편과 불을 흩뿌림)
+    giant-chance: 0.12
+    giant-power: 9.0
   earthquake:
     enabled: true
     duration-seconds: 25
+    radius: 30
+    # 0.25초마다 튀어오르는 지면 블록 수
+    blocks-per-burst: 6
+    # 2초마다 땅이 길게 갈라질 확률 (플레이어마다)
+    fissure-chance: 0.6
   thunder_storm:
     enabled: true
     duration-seconds: 30
+    radius: 35
+    # 4초마다 한곳에 연달아 떨어지는 벼락 수
+    barrage-strikes: 8
   acid_rain:
     enabled: true
     duration-seconds: 40
-    damage-per-second: 1.0
+    damage-per-second: 1.5
+    radius: 30
+    # 0.2초마다 녹는 지면 블록 수 (나뭇잎·풀 사라짐, 잔디→흙, 돌→조약돌→자갈)
+    corrode-per-burst: 8
   tornado:
     enabled: true
     duration-seconds: 40
+    # 동시에 생기는 토네이도 수
+    count: 2
+    radius: 14
+    height: 48
+    # 1틱에 움직이는 칸 수
+    speed: 0.3
+    # 0.1초마다 뜯겨 올라가는 블록 수
+    blocks-per-rip: 3
   blizzard:
     enabled: true
     duration-seconds: 40
+    radius: 30
+    # 0.15초마다 눈이 쌓이는 칸 수 (물은 얼음으로)
+    snow-per-burst: 10

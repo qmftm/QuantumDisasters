@@ -12,16 +12,16 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import java.util.ArrayList;
 import java.util.List;
 
-/** 토네이도가 플레이어를 쫓아다니며 근처의 생물과 블록을 빨아올립니다. */
+/**
+ * 거대한 토네이도가 플레이어를 쫓아다니며 근처의 생물과 블록을 빨아올립니다.
+ * 여러 개가 동시에 생길 수 있습니다. (config 의 count)
+ */
 public final class Tornado extends Disaster {
 
-    private static final double RADIUS = 8;
-    private static final int HEIGHT = 24;
-    private static final double SPEED = 0.18;
-
-    private Location center;
+    private final List<Location> centers = new ArrayList<>();
 
     public Tornado(QuantumDisasters plugin) {
         super(plugin, "tornado");
@@ -37,47 +37,67 @@ public final class Tornado extends Disaster {
         return Component.text("거대한 회오리바람이 다가옵니다! 도망치세요!", NamedTextColor.WHITE);
     }
 
+    private double radius() {
+        return config().getDouble("radius", 14);
+    }
+
+    private int height() {
+        return config().getInt("height", 48);
+    }
+
     @Override
     public void start() {
         setWeather(true, false, durationTicks() + 200);
+        centers.clear();
+        spawnTornadoes();
+    }
+
+    private void spawnTornadoes() {
         List<Player> targets = targets();
         if (targets.isEmpty()) {
-            center = null;
             return;
         }
-        Location base = targets.get(random().nextInt(targets.size())).getLocation();
-        double angle = random().nextDouble(Math.PI * 2);
-        center = base.clone().add(Math.cos(angle) * 25, 0, Math.sin(angle) * 25);
-        snapToGround();
+        int count = scaled("count", 2);
+        for (int i = 0; i < count; i++) {
+            Location base = targets.get(random().nextInt(targets.size())).getLocation();
+            double angle = random().nextDouble(Math.PI * 2);
+            double distance = random().nextDouble(35, 55);
+            Location center = base.clone().add(Math.cos(angle) * distance, 0, Math.sin(angle) * distance);
+            snapToGround(center);
+            centers.add(center);
+        }
     }
 
     @Override
     public void tick(int elapsed) {
-        if (center == null) {
-            start();
-            if (center == null) {
+        if (centers.isEmpty()) {
+            spawnTornadoes();
+            if (centers.isEmpty()) {
                 return;
             }
         }
-        move();
-        drawFunnel(elapsed);
-        pullEntities();
-        if (blockDamage() && elapsed % 4 == 0) {
-            ripBlock();
-        }
-        if (elapsed % 40 == 0) {
-            center.getWorld().playSound(center, Sound.ITEM_ELYTRA_FLYING, 3f, 0.5f);
+        for (Location center : centers) {
+            move(center);
+            drawFunnel(center, elapsed);
+            pullEntities(center);
+            if (blockDamage() && elapsed % 2 == 0) {
+                ripBlocks(center);
+            }
+            if (elapsed % 30 == 0) {
+                center.getWorld().playSound(center, Sound.ITEM_ELYTRA_FLYING, 6f, 0.4f);
+                center.getWorld().playSound(center, Sound.WEATHER_RAIN_ABOVE, 6f, 0.5f);
+            }
         }
     }
 
     @Override
     public void stop() {
         super.stop();
-        center = null;
+        centers.clear();
     }
 
-    /** 같은 월드에서 가장 가까운 플레이어 쪽으로 천천히, 약간 비틀거리며 이동합니다. */
-    private void move() {
+    /** 같은 월드에서 가장 가까운 플레이어 쪽으로, 약간 비틀거리며 이동합니다. */
+    private void move(Location center) {
         Player nearest = null;
         double best = Double.MAX_VALUE;
         for (Player player : targets()) {
@@ -100,65 +120,83 @@ public final class Tornado extends Disaster {
         if (dir.lengthSquared() < 0.01) {
             dir = new Vector(1, 0, 0);
         }
-        dir.normalize().add(new Vector(random().nextDouble(-0.6, 0.6), 0, random().nextDouble(-0.6, 0.6)));
-        center.add(dir.normalize().multiply(SPEED));
-        snapToGround();
+        dir.normalize().add(new Vector(random().nextDouble(-0.7, 0.7), 0, random().nextDouble(-0.7, 0.7)));
+        center.add(dir.normalize().multiply(config().getDouble("speed", 0.3)));
+        snapToGround(center);
     }
 
-    private void snapToGround() {
+    private static void snapToGround(Location center) {
         World world = center.getWorld();
-        center.setY(world.getHighestBlockYAt(center.getBlockX(), center.getBlockZ()) + 1);
+        if (world.isChunkLoaded(center.getBlockX() >> 4, center.getBlockZ() >> 4)) {
+            center.setY(world.getHighestBlockYAt(center.getBlockX(), center.getBlockZ()) + 1);
+        }
     }
 
-    private void drawFunnel(int elapsed) {
+    private void drawFunnel(Location center, int elapsed) {
         World world = center.getWorld();
-        for (int h = 0; h < HEIGHT; h++) {
-            double r = 0.8 + h * 0.3;
-            for (int arm = 0; arm < 3; arm++) {
-                double a = elapsed * 0.35 + h * 0.5 + arm * (Math.PI * 2 / 3);
+        int height = height();
+        double topRadius = radius() * 1.1;
+        for (double h = 0; h < height; h += 1.5) {
+            double r = 1 + (topRadius - 1) * (h / height);
+            int arms = h < height / 2.0 ? 3 : 5;
+            for (int arm = 0; arm < arms; arm++) {
+                double a = elapsed * 0.4 + h * 0.35 + arm * (Math.PI * 2 / arms);
                 Location p = center.clone().add(Math.cos(a) * r, h, Math.sin(a) * r);
-                world.spawnParticle(Particle.CLOUD, p, 1, 0.1, 0.1, 0.1, 0);
+                world.spawnParticle(Particle.CLOUD, p, 1, 0.2, 0.2, 0.2, 0);
+                if (arm == 0 && h % 6 == 0) {
+                    world.spawnParticle(Particle.LARGE_SMOKE, p, 1, 0.3, 0.3, 0.3, 0);
+                }
             }
         }
-        world.spawnParticle(Particle.LARGE_SMOKE, center, 4, 1.5, 0.3, 1.5, 0.02);
+        // 바닥에서 흙먼지가 소용돌이칩니다.
+        Block ground = center.clone().add(0, -1, 0).getBlock();
+        if (!ground.getType().isAir()) {
+            world.spawnParticle(Particle.BLOCK, center, 25, 3, 0.5, 3, ground.getBlockData());
+        }
+        world.spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, center, 3, 2.5, 0.5, 2.5, 0.05);
     }
 
-    private void pullEntities() {
-        for (Entity entity : center.getWorld().getNearbyEntities(center, RADIUS, HEIGHT, RADIUS)) {
+    private void pullEntities(Location center) {
+        double radius = radius();
+        int height = height();
+        for (Entity entity : center.getWorld().getNearbyEntities(center, radius, height, radius)) {
             if (entity instanceof Player player && !targets().contains(player)) {
                 continue; // 크리에이티브/관전자는 영향 없음
             }
             Vector offset = entity.getLocation().toVector().subtract(center.toVector());
-            double height = offset.getY();
+            double h = offset.getY();
             offset.setY(0);
             double dist = offset.length();
-            if (dist > RADIUS || height < -2) {
+            if (dist > radius || h < -3) {
                 continue;
             }
 
-            Vector inward = offset.lengthSquared() < 0.01 ? new Vector() : offset.clone().normalize().multiply(-0.15);
+            // 가까울수록 강하게
+            double strength = 1 - dist / radius * 0.6;
+            Vector inward = offset.lengthSquared() < 0.01 ? new Vector() : offset.clone().normalize().multiply(-0.2 * strength);
             Vector spin = new Vector(-offset.getZ(), 0, offset.getX());
             if (spin.lengthSquared() > 0.01) {
-                spin.normalize().multiply(0.35);
+                spin.normalize().multiply(0.5 * strength);
             }
-            Vector push = inward.add(spin).setY(height > HEIGHT - 6 ? 0.05 : 0.28);
+            Vector velocity = inward.add(spin).setY(h > height - 8 ? 0.05 : 0.35 * strength + 0.05);
 
-            // 꼭대기까지 올라가면 바깥으로 날려버립니다.
-            if (height > HEIGHT - 6 && random().nextInt(15) == 0) {
-                push = offset.clone().normalize().multiply(1.5).setY(0.6);
+            // 꼭대기까지 올라가면 멀리 날려버립니다.
+            if (h > height - 8 && random().nextInt(12) == 0) {
+                velocity = offset.clone().normalize().multiply(2.2).setY(0.8);
             }
-            push(entity, push);
+            push(entity, velocity);
             entity.setFallDistance(0);
         }
     }
 
-    private void ripBlock() {
-        World world = center.getWorld();
-        int x = center.getBlockX() + random().nextInt(-3, 4);
-        int z = center.getBlockZ() + random().nextInt(-3, 4);
-        Block block = world.getHighestBlockAt(x, z);
-        if (isBreakable(block)) {
-            launchBlock(block, new Vector(random().nextDouble(-0.3, 0.3), 0.9, random().nextDouble(-0.3, 0.3)));
+    private void ripBlocks(Location center) {
+        int count = scaled("blocks-per-rip", 3);
+        int ripRadius = (int) Math.max(3, radius() / 2);
+        for (int i = 0; i < count; i++) {
+            Block block = randomSurface(center, ripRadius);
+            if (block != null && isBreakable(block)) {
+                launchBlock(block, new Vector(random().nextDouble(-0.4, 0.4), random().nextDouble(0.9, 1.4), random().nextDouble(-0.4, 0.4)));
+            }
         }
     }
 }

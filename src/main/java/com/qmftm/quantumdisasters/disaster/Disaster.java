@@ -73,6 +73,35 @@ public abstract class Disaster {
         return plugin.disasterManager().targets();
     }
 
+    /** 전체 재해 세기 배율 (config 의 intensity). 개수·빈도에 곱해집니다. */
+    protected double intensity() {
+        return Math.max(0.1, plugin.getConfig().getDouble("intensity", 1.0));
+    }
+
+    /** 재해별 설정값(정수)에 intensity 를 곱한 값. */
+    protected int scaled(String key, int def) {
+        return Math.max(1, (int) Math.round(config().getInt(key, def) * intensity()));
+    }
+
+    /** 확률(0~1)을 넘기면 그만큼의 확률로 true. */
+    protected static boolean chance(double probability) {
+        return random().nextDouble() < probability;
+    }
+
+    /**
+     * center 주변 radius 칸 안의 무작위 지표면 블록. 불러와지지 않은 청크면 null.
+     * (재해 범위가 넓어도 새 청크를 강제로 불러오지 않도록)
+     */
+    protected static Block randomSurface(org.bukkit.Location center, int radius) {
+        World world = center.getWorld();
+        int x = center.getBlockX() + random().nextInt(-radius, radius + 1);
+        int z = center.getBlockZ() + random().nextInt(-radius, radius + 1);
+        if (!world.isChunkLoaded(x >> 4, z >> 4)) {
+            return null;
+        }
+        return world.getHighestBlockAt(x, z);
+    }
+
     protected static Random random() {
         return ThreadLocalRandom.current();
     }
