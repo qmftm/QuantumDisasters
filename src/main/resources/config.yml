@@ -36,8 +36,12 @@ warning-seconds: 5
 # 천천히 올라가고(rise) → 꼭대기에서 버티고(hold) → 길게 내려갑니다(fall). 20틱 = 1초
 siren:
   # 사용할 소리. 여러 개를 목록으로 쓰면 겹쳐서 재생합니다. (리소스팩의 커스텀 소리도 가능)
-  #   예) sound: [minecraft:block.note_block.didgeridoo, minecraft:block.note_block.flute]
-  sound: minecraft:block.note_block.didgeridoo
+  # /qd siren 으로 게임 안에서 바로 들어볼 수 있습니다. (설정을 바꿨으면 /qd reload 먼저)
+  #
+  # [B] 디저리두 + 플루트: 낮은 바탕 + 또렷한 사이렌 음 (기본)
+  sound: [minecraft:block.note_block.didgeridoo, minecraft:block.note_block.flute]
+  # [C] 플루트만: 덜 무겁고 더 사이렌다운 음 → 위 줄을 지우고 아래 줄의 # 을 지운 뒤 max-pitch 를 1.2 로
+  # sound: minecraft:block.note_block.flute
   volume: 1.0
   # 음 높이 범위 (0.5 ~ 2.0, 낮을수록 어둡고 묵직함)
   min-pitch: 0.5

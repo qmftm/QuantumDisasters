@@ -13,7 +13,7 @@ import java.util.Locale;
 
 public final class DisasterCommand implements TabExecutor {
 
-    private static final List<String> SUBCOMMANDS = List.of("start", "stop", "skip", "trigger", "list", "status", "reload");
+    private static final List<String> SUBCOMMANDS = List.of("start", "stop", "skip", "trigger", "list", "status", "siren", "reload");
 
     private final QuantumDisasters plugin;
 
@@ -90,6 +90,10 @@ public final class DisasterCommand implements TabExecutor {
                 }
                 sender.sendMessage(msg);
             }
+            case "siren" -> {
+                manager.siren().play();
+                ok(sender, "사이렌을 테스트로 울립니다. (모든 접속자에게 들림)");
+            }
             case "reload" -> {
                 plugin.reloadConfig();
                 ok(sender, "설정을 다시 불러왔습니다.");
@@ -120,6 +124,7 @@ public final class DisasterCommand implements TabExecutor {
         sender.sendMessage(Component.text(" /" + label + " trigger <재해> - 특정 재해 즉시 발생", NamedTextColor.GRAY));
         sender.sendMessage(Component.text(" /" + label + " list - 재해 목록", NamedTextColor.GRAY));
         sender.sendMessage(Component.text(" /" + label + " status - 현재 상태", NamedTextColor.GRAY));
+        sender.sendMessage(Component.text(" /" + label + " siren - 사이렌 테스트", NamedTextColor.GRAY));
         sender.sendMessage(Component.text(" /" + label + " reload - 설정 다시 불러오기", NamedTextColor.GRAY));
     }
 

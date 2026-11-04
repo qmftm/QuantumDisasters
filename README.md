@@ -57,6 +57,7 @@
 | `/qd trigger <id>` | 특정 재해 즉시 발생 |
 | `/qd list` | 재해 목록 |
 | `/qd status` | 현재 상태 |
+| `/qd siren` | 사이렌 테스트 (모든 접속자에게 들림) |
 | `/qd reload` | config.yml 다시 불러오기 |
 
 ## 설정 (`plugins/QuantumDisasters/config.yml`)
@@ -73,7 +74,7 @@
 | `first-delay-seconds` | `15` | 첫 재해까지 대기 시간 |
 | `interval-seconds` | `45` | 재해 사이 휴식 시간 (0 = 쉬지 않음) |
 | `warning-seconds` | `5` | 경고 카운트다운 |
-| `siren.sound` | `minecraft:block.note_block.didgeridoo` | 사이렌 소리 (목록으로 쓰면 겹쳐 재생, 리소스팩 커스텀 소리 가능) |
+| `siren.sound` | 디저리두 + 플루트 | 사이렌 소리 (목록으로 쓰면 겹쳐 재생, 리소스팩 커스텀 소리 가능) |
 | `siren.min-pitch` / `max-pitch` | `0.5` / `1.3` | 음 높이 범위 (0.5~2.0, 낮을수록 어두움) |
 | `siren.rise-ticks` / `hold-ticks` / `fall-ticks` | `60` / `30` / `100` | 올라가는 / 버티는 / 내려가는 시간(틱) |
 | `siren.cycles` / `interval-ticks` / `volume` | `1` / `1` / `1.0` | 반복 횟수, 소리 간격(틱), 음량 |

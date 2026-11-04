@@ -124,6 +124,10 @@ public final class DisasterManager {
         return day;
     }
 
+    public Siren siren() {
+        return siren;
+    }
+
     public boolean isRunning() {
         return state != State.STOPPED;
     }

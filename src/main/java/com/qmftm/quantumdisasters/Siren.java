@@ -30,9 +30,14 @@ public final class Siren {
         stop();
         FileConfiguration config = plugin.getConfig();
         // sound 는 하나(문자열) 또는 여러 개(목록)로 쓸 수 있습니다. 여러 개면 겹쳐서 재생합니다.
-        List<String> sounds = config.isList("siren.sound")
-                ? config.getStringList("siren.sound")
-                : List.of(config.getString("siren.sound", "minecraft:block.note_block.didgeridoo"));
+        List<String> sounds;
+        if (config.isList("siren.sound")) {
+            sounds = config.getStringList("siren.sound");
+        } else if (config.isString("siren.sound")) {
+            sounds = List.of(config.getString("siren.sound"));
+        } else {
+            sounds = List.of("minecraft:block.note_block.didgeridoo", "minecraft:block.note_block.flute");
+        }
         float volume = (float) config.getDouble("siren.volume", 1.0);
         int cycles = Math.max(1, config.getInt("siren.cycles", 1));
         int rise = Math.max(1, config.getInt("siren.rise-ticks", 60));
