@@ -22,7 +22,7 @@ public final class Earthquake extends Disaster {
 
     @Override
     public Component displayName() {
-        return Component.text("🌋 지진", NamedTextColor.DARK_RED);
+        return Component.text("지진", NamedTextColor.DARK_RED);
     }
 
     @Override

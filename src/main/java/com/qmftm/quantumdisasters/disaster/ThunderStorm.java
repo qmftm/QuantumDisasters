@@ -18,7 +18,7 @@ public final class ThunderStorm extends Disaster {
 
     @Override
     public Component displayName() {
-        return Component.text("⛈ 뇌우", NamedTextColor.AQUA);
+        return Component.text("뇌우", NamedTextColor.AQUA);
     }
 
     @Override

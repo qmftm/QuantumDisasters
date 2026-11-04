@@ -18,7 +18,7 @@ public final class Blizzard extends Disaster {
 
     @Override
     public Component displayName() {
-        return Component.text("❄ 눈보라", NamedTextColor.WHITE);
+        return Component.text("눈보라", NamedTextColor.WHITE);
     }
 
     @Override

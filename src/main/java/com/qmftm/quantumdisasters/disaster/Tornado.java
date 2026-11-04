@@ -29,7 +29,7 @@ public final class Tornado extends Disaster {
 
     @Override
     public Component displayName() {
-        return Component.text("🌪 토네이도", NamedTextColor.GRAY);
+        return Component.text("토네이도", NamedTextColor.GRAY);
     }
 
     @Override

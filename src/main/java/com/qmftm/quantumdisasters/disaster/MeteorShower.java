@@ -28,7 +28,7 @@ public final class MeteorShower extends Disaster {
 
     @Override
     public Component displayName() {
-        return Component.text("☄ 유성우", NamedTextColor.GOLD);
+        return Component.text("유성우", NamedTextColor.GOLD);
     }
 
     @Override

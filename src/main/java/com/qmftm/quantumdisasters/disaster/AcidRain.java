@@ -21,7 +21,7 @@ public final class AcidRain extends Disaster {
 
     @Override
     public Component displayName() {
-        return Component.text("☔ 산성비", NamedTextColor.GREEN);
+        return Component.text("산성비", NamedTextColor.GREEN);
     }
 
     @Override
